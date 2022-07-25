@@ -19,19 +19,18 @@ echo(Welcome *name *last)
 
 loop(2)
 {
-	echo(a)
-	loop(2)
-	{
-		echo(b)
-		loop(2)
-		{
-			echo(c)
-			
-			loop(2)
-			{
-				echo(d)
-			}
-		}
-	}
+  echo(a)
+  loop(2)
+  {
+    echo(b)
+    loop(2)
+    {
+      echo(c)
+      loop(2)
+      {
+        echo(d)
+      }
+    }
+  }
 }
 ```
