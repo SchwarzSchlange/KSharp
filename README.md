@@ -7,15 +7,15 @@ The better and clear version of KMLANG
 ``` ruby
 DEBUG ON
 
-push INFO(Program ( *GL_VER ) started at *GL_DIRECTORY [ *GL_TIME ])
+push INFO(Program ( $GL_VER ) started at $GL_DIRECTORY [ $GL_TIME ])
 
-echo (*INFO)
+echo ($INFO)
 
 userinput name
 
 userinput last
 
-echo(Welcome *name *last)
+echo(Welcome $name $last)
 
 DEBUG OFF
 
