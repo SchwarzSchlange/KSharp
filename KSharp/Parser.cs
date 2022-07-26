@@ -28,27 +28,29 @@ namespace KSharp
                 List<Token> my_tokens = new List<Token>();
                 foreach(string expression in exp)
                 {
+                    //Debug.Info($"[{expression}]");
+                    int LayerIndent = expression.TakeWhile(Char.IsWhiteSpace).Count();
                     var x = expression.Trim();
                     string quote = '"'.ToString();
                     if (x == "(")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.BREC_START, x, my_line);
+                        Token token = new Token(k, Token.TOKEN_TYPE.BREC_START, x, my_line,LayerIndent);
                         
                         my_tokens.Add(token);
                     }
                     else if (x == ")")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.BREC_END, x, my_line); ;
+                        Token token = new Token(k, Token.TOKEN_TYPE.BREC_END, x, my_line, LayerIndent); ;
                         my_tokens.Add(token);
                     }
                     else if (x == "{")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.CON_START, x, my_line);
+                        Token token = new Token(k, Token.TOKEN_TYPE.CON_START, x, my_line, LayerIndent);
                         my_tokens.Add(token);
                     }
                     else if (x == "}")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.CON_END, x, my_line);
+                        Token token = new Token(k, Token.TOKEN_TYPE.CON_END, x, my_line, LayerIndent);
                         my_tokens.Add(token);
                     }
                     else if (x == quote)
@@ -164,13 +166,14 @@ namespace KSharp
         private static string[] ExplodeLineString(string line)
         {
             string quote = '"'.ToString();
-            line = line.Trim();
+            int count = line.TrimStart().Count();
+            //line = line.Trim();
             line = line.Replace(quote, $" {quote} ");
             line = line.Replace("(", " ( ");
             line = line.Replace(")", " ) ");
             line = line.Replace("(", " ( ");
-            line = line.Replace("{", " { ");
-            line = line.Replace("}", " } ");
+            //line = line.Replace("{", " { ");
+            //line = line.Replace("}", " } ");
             line = line.Replace("(", $" ( ");
 
             line = line.Replace("+", " + ");

@@ -28,7 +28,7 @@ namespace KSharp
 
             LastLines = Parser.ParseFile(SCRIPT_PATH);
 
-            Console.Clear();
+            //Console.Clear();
 
             foreach(Line line in LastLines)
             {
@@ -40,7 +40,7 @@ namespace KSharp
                 Console.WriteLine($"Line {line.LineIndex}");
                 foreach(Token token in line.Tokens)
                 {
-                    Console.WriteLine($"[{token.INDEX}] => {token.TYPE} => {token.Root.LineIndex} => {token.VALUE} [STATIC] {token.STATIC_VALUE}");
+                    Console.WriteLine($"[{token.INDEX}] | {token.TYPE} | {token.Root.LineIndex} | {token.VALUE} | {token.STATIC_VALUE} | {token.LAYER}");
                 }
                 Console.WriteLine($"---------------------------");
                 */
