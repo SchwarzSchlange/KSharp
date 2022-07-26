@@ -199,9 +199,14 @@ namespace KSharp
                         {
                             string to_express = lan.Replace("$", "");
 
-                            object _value = Variables[to_express];
-                            //Console.WriteLine("FETCHED = " +_value.ToString());
-                            to_static_express += _value + " ";
+                            if(TryGetVariable(to_express,out object _value))
+                            {
+                                to_static_express += _value + " ";
+                            }
+                            else
+                            {
+                                to_static_express += "NULL";
+                            }
                             
                             
                         }
@@ -336,6 +341,10 @@ namespace KSharp
                         Debug.Error($"Unexpected loop count at line {tokens[0].Root.LineIndex}");
                         return;
                     }
+                }
+                else if(tokens[0].VALUE == "clear")
+                {
+                    Console.Clear();
                 }
                 else
                 {

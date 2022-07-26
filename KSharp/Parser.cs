@@ -86,7 +86,11 @@ namespace KSharp
                         Token token = new Token(k, Token.TOKEN_TYPE.MATH_END, x, my_line);
                         my_tokens.Add(token);
                     }
-                   
+                    else if(x == ",")
+                    {
+                        Token token = new Token(k, Token.TOKEN_TYPE.COMMA, x, my_line);
+                        my_tokens.Add(token);
+                    }
                     else if(k == 0)
                     {
                         if(x != "")
@@ -175,7 +179,7 @@ namespace KSharp
             line = line.Replace("/", " / ");
             line = line.Replace("m[", " m[ ");
             line = line.Replace("]m", " ]m ");
-
+            line = line.Replace(",", " , ");
             return line.Split(' ');
         }
     }
