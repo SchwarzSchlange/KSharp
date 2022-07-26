@@ -28,3 +28,6 @@ loop(20)
 }
 
 ```
+
+### Used Library to Math Parse : org.mariuszgromada.math.mxparser | http://mathparser.org 
+I downloaded from Nuget
