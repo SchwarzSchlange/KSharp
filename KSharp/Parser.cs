@@ -32,34 +32,66 @@ namespace KSharp
                     string quote = '"'.ToString();
                     if (x == "(")
                     {
-                        Token token = new Token{ INDEX = k,TYPE = Token.TOKEN_TYPE.BREC_START,Root = my_line,VALUE = x};
+                        Token token = new Token(k, Token.TOKEN_TYPE.BREC_START, x, my_line);
+                        
                         my_tokens.Add(token);
                     }
                     else if (x == ")")
                     {
-                        Token token = new Token { INDEX = k, TYPE = Token.TOKEN_TYPE.BREC_END, Root = my_line, VALUE = x };
+                        Token token = new Token(k, Token.TOKEN_TYPE.BREC_END, x, my_line); ;
                         my_tokens.Add(token);
                     }
                     else if (x == "{")
                     {
-                        Token token = new Token { INDEX = k, TYPE = Token.TOKEN_TYPE.CON_START, Root = my_line, VALUE = x };
+                        Token token = new Token(k, Token.TOKEN_TYPE.CON_START, x, my_line);
                         my_tokens.Add(token);
                     }
                     else if (x == "}")
                     {
-                        Token token = new Token { INDEX = k, TYPE = Token.TOKEN_TYPE.CON_END, Root = my_line, VALUE = x };
+                        Token token = new Token(k, Token.TOKEN_TYPE.CON_END, x, my_line);
                         my_tokens.Add(token);
                     }
                     else if (x == quote)
                     {
-                        Token token = new Token { INDEX = k, TYPE = Token.TOKEN_TYPE.QUOTE, Root = my_line, VALUE = x };
+                        Token token = new Token(k, Token.TOKEN_TYPE.QUOTE, x, my_line);
                         my_tokens.Add(token);
                     }
+                    else if(x == "+")
+                    {
+                        Token token = new Token(k, Token.TOKEN_TYPE.PLUS, x, my_line);
+                        my_tokens.Add(token);
+                    }
+                    else if (x == "-")
+                    {
+                        Token token = new Token(k, Token.TOKEN_TYPE.MINUS, x, my_line);
+                        my_tokens.Add(token);
+                    }
+                    else if (x == "/")
+                    {
+                        Token token = new Token(k, Token.TOKEN_TYPE.DIVIDER, x, my_line);
+                        my_tokens.Add(token);
+                    }
+                    else if (x == "*")
+                    {
+                        Token token = new Token(k, Token.TOKEN_TYPE.MULTIP, x, my_line);
+                        my_tokens.Add(token);
+                    }
+                    else if(x == "m[")
+                    {
+                        Token token = new Token(k, Token.TOKEN_TYPE.MATH_START, x, my_line);
+                        my_tokens.Add(token);
+                    }
+                    else if(x == "]m")
+                    {
+                        Token token = new Token(k, Token.TOKEN_TYPE.MATH_END, x, my_line);
+                        my_tokens.Add(token);
+                    }
+                   
                     else if(k == 0)
                     {
                         if(x != "")
                         {
-                            Token token = new Token { INDEX = k, TYPE = Token.TOKEN_TYPE.COMMAND, Root = my_line, VALUE = x };
+                            Token token = new Token(k, Token.TOKEN_TYPE.COMMAND, x, my_line);
                             my_tokens.Add(token);
                         }
                         else
@@ -75,31 +107,32 @@ namespace KSharp
                     }
                     else
                     {
-                        if(x.Contains("*GL_"))
+                        if(x.Contains("$GL_"))
                         {
                             //GLOBAL VARIABLE
-                            var value = x.Replace("*GL_", "");
-                            
-                            Token token = new Token { INDEX = k, TYPE = Token.TOKEN_TYPE.GLOBAL, Root = my_line, VALUE = value };
+                            var value = x.Replace("$GL_", "");
+
+                            Token token = new Token(k, Token.TOKEN_TYPE.GLOBAL, value, my_line);
                             my_tokens.Add(token);
                             
                             
                         }
                         else
                         {
-                            if(x.Contains("*"))
+                            if(x.Contains("$"))
                             {
                                 //NORMAL VARIABLE
-                                var value = x.Replace("*", "");
+                                var value = x.Replace("$", "");
 
 
-                                Token token = new Token { INDEX = k, TYPE = Token.TOKEN_TYPE.VARIABLE, Root = my_line, VALUE = value };
+                                Token token = new Token(k, Token.TOKEN_TYPE.VARIABLE, value, my_line);
+                                token.STATIC_VALUE = x;
                                 my_tokens.Add(token);
 
                             }
                             else
                             {
-                                Token token = new Token { INDEX = k, TYPE = Token.TOKEN_TYPE.NORMAL, Root = my_line, VALUE = x };
+                                Token token = new Token(k, Token.TOKEN_TYPE.NORMAL, x, my_line);
                                 my_tokens.Add(token);
                             }
 
@@ -135,6 +168,13 @@ namespace KSharp
             line = line.Replace("{", " { ");
             line = line.Replace("}", " } ");
             line = line.Replace("(", $" ( ");
+
+            line = line.Replace("+", " + ");
+            line = line.Replace("-", " - ");
+            line = line.Replace("*", " * ");
+            line = line.Replace("/", " / ");
+            line = line.Replace("m[", " m[ ");
+            line = line.Replace("]m", " ]m ");
 
             return line.Split(' ');
         }
