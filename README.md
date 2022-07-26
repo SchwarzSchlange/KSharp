@@ -1,4 +1,4 @@
-# KSharp [BETA]
+# KSharp [BETA] v1.1
 The better and clear version of KMLANG
 
 
@@ -17,20 +17,14 @@ userinput last
 
 echo(Welcome *name *last)
 
-loop(2)
+DEBUG OFF
+
+push i(0)
+
+loop(20)
 {
-  echo(a)
-  loop(2)
-  {
-    echo(b)
-    loop(2)
-    {
-      echo(c)
-      loop(2)
-      {
-        echo(d)
-      }
-    }
-  }
+	push i(m[($i+1)*2]m)
+	echo($i)
 }
+
 ```
