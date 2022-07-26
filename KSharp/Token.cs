@@ -23,7 +23,15 @@ namespace KSharp
 
             VARIABLE,
             GLOBAL,
-            NULL
+            NULL,
+            PLUS,
+            MINUS,
+            DIVIDER,
+            MULTIP,
+            MATH_START,
+            MATH_END,
+            MATH_TO_UPDATE
+
 
            
         };
@@ -31,9 +39,17 @@ namespace KSharp
         public int INDEX { get; set; }
         public TOKEN_TYPE TYPE { get; set; }
         public string VALUE { get; set; }
+        public string STATIC_VALUE { get; set; }        
         public Line Root { get; set; }
 
-
+        public Token(int index,TOKEN_TYPE type,string value,Line root)
+        {
+            this.INDEX = index;
+            this.TYPE = type;
+            this.VALUE = value;
+            this.Root = root;
+            STATIC_VALUE = value;
+        }
   
     }
 }

@@ -9,7 +9,7 @@ namespace KSharp
 {
     class Program
     {
-        public const string VERSION = "1.0";
+        public const string VERSION = "1.1";
         public static string SCRIPT_PATH;
         public static List<Line> LastLines = new List<Line>();
 
@@ -28,24 +28,26 @@ namespace KSharp
 
             LastLines = Parser.ParseFile(SCRIPT_PATH);
 
+            Console.Clear();
+
             foreach(Line line in LastLines)
             {
+                Engine.ConvertAllGlobals(line.Tokens);
+                Engine.ConvertAllVariables(line.Tokens);
+                Engine.ConvertAllMath(line.Tokens);
+
                 /*
                 Console.WriteLine($"Line {line.LineIndex}");
                 foreach(Token token in line.Tokens)
                 {
-                    Console.WriteLine($"[{token.INDEX}] => {token.TYPE} => {token.Root.LineIndex} => {token.VALUE}");
+                    Console.WriteLine($"[{token.INDEX}] => {token.TYPE} => {token.Root.LineIndex} => {token.VALUE} [STATIC] {token.STATIC_VALUE}");
                 }
                 Console.WriteLine($"---------------------------");
                 */
 
-                Engine.ConvertAllGlobals(line.Tokens);
-                Engine.ConvertAllVariables(line.Tokens);
                 Engine.RunTokens(line.Tokens);
-                
-            }
 
-            
+            }
 
             Debug.Info("Program has been ended...");
             Console.ReadLine();
@@ -53,7 +55,7 @@ namespace KSharp
 
         private static void InitilazeConsole()
         {
-            Console.Title = "KSharp";
+            Console.Title = $"KSharp | Kaan Temizkan | {VERSION}";
             Console.ForegroundColor = ConsoleColor.White;
         }
     }
