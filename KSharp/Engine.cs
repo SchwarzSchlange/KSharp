@@ -303,10 +303,10 @@ namespace KSharp
                 {
                     if (TryGetTokenAtIndex(tokens, 1, out Token name_token))
                     {
-                        Console.Write(">>>");
+                        Console.Write($"[@{Environment.UserName}] >>>");
                         string value = Console.ReadLine();
                         Engine.AddVariable(name_token.VALUE, value);
-                        Debug.Success($"[{name_token.VALUE}] attached as [{value}] with user input.");
+                        Debug.Success($"[{name_token.VALUE}] attached as [{value}] with 'USER INPUT'");
                     }
                     else
                     {
@@ -346,6 +346,13 @@ namespace KSharp
                 {
                     Console.Clear();
                 }
+                else if(tokens[0].VALUE == "if")
+                {
+                    //if(30 == 30) { }
+                    
+
+                    
+                }
                 else
                 {
                     if (tokens[0].VALUE != "")
@@ -368,9 +375,9 @@ namespace KSharp
         {
             
                 Line Start = lines.Find(x => x.Tokens.Count > 0 && x.Tokens[0].TYPE == type1 && x.LineIndex >start_index);
-                //Debug.Success(Start.LineIndex.ToString());
-                Line End = lines.FindLast(x => x.Tokens.Count > 0 && x.Tokens[0].TYPE == type2 && x.LineIndex > Start.LineIndex);
-                //Debug.Success(End.LineIndex.ToString());
+                Debug.Success(Start.LineIndex.ToString());
+                Line End = lines.Find(x => x.Tokens.Count > 0 && x.Tokens[0].TYPE == type2 && x.LineIndex > Start.LineIndex && x.Tokens[0].LAYER == Start.Tokens[0].LAYER);
+                Debug.Success(End.LineIndex.ToString());
 
                 var between_lines = lines.FindAll(x => x.LineIndex > Start.LineIndex && x.LineIndex < End.LineIndex);
                 return between_lines;

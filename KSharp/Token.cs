@@ -40,16 +40,18 @@ namespace KSharp
         public int INDEX { get; set; }
         public TOKEN_TYPE TYPE { get; set; }
         public string VALUE { get; set; }
-        public string STATIC_VALUE { get; set; }        
+        public string STATIC_VALUE { get; set; }
+        public int LAYER { get; set; }
         public Line Root { get; set; }
 
-        public Token(int index,TOKEN_TYPE type,string value,Line root)
+        public Token(int index,TOKEN_TYPE type,string value,Line root,int layer = 0)
         {
             this.INDEX = index;
             this.TYPE = type;
             this.VALUE = value;
             this.Root = root;
             STATIC_VALUE = value;
+            this.LAYER = layer;
         }
   
     }
