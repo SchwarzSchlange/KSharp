@@ -54,6 +54,7 @@ namespace KSharp
                 else
                 {
                     _token = null;
+                    return false;
                 }
                         
                 
@@ -251,6 +252,11 @@ namespace KSharp
 
                     if (TryGetTokenAtIndex(tokens, 1, out Token name_token))
                     {
+                        if(Char.IsDigit(name_token.VALUE[0]))
+                        {
+                            Debug.Error($"A variable could not start with a digit. At line {tokens[0].Root.LineIndex}");
+                            return;
+                        }
                         var to_attach_value = StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END);
                       
                         Engine.AddVariable(name_token.VALUE, to_attach_value);
@@ -283,6 +289,10 @@ namespace KSharp
                         {
                             Debug.IsDebug = true;
                         }
+                        else if(status_token.VALUE == "DEVELOPER_MODE")
+                        {
+                            Debug.IsDeveloperMode = true;
+                        }
                         else if (status_token.VALUE == "OFF")
                         {
                             Debug.IsDebug = false;
@@ -290,20 +300,19 @@ namespace KSharp
                         else
                         {
                             Debug.Error($"Unknown status type for 'DEBUG' at line {tokens[0].Root.LineIndex} with value '{status_token.VALUE}'");
-                            return;
                         }
                         Debug.Success($"DEBUG Mode is now : {status_token.VALUE}");
                     }
                     else
                     {
-                        Debug.Error($"State could not be found at line {tokens[0].Root.LineIndex}");
+                        Debug.Error($"Debug state could not be found at line {tokens[0].Root.LineIndex}. Use 'ON' or 'OFF");
                     }
                 }
                 else if (tokens[0].VALUE == "userinput")
                 {
                     if (TryGetTokenAtIndex(tokens, 1, out Token name_token))
                     {
-                        Console.Write($"[@{Environment.UserName}] >>>");
+                        Console.Write($"[@{Environment.UserName}] >>> ");
                         string value = Console.ReadLine();
                         Engine.AddVariable(name_token.VALUE, value);
                         Debug.Success($"[{name_token.VALUE}] attached as [{value}] with 'USER INPUT'");
@@ -325,12 +334,12 @@ namespace KSharp
                         
                         for(int i = 1; i < LoopCount;i++)
                         {
-                            foreach (var runLine in runLines)
+                            for (Program.CurrentReadingLine = runLines.First().LineIndex-1;Program.CurrentReadingLine < runLines.Last().LineIndex-1;Program.CurrentReadingLine++)
                             {
-                                Engine.ConvertAllGlobals(runLine.Tokens);
-                                Engine.ConvertAllVariables(runLine.Tokens);
-                                Engine.ConvertAllMath(runLine.Tokens);
-                                RunTokens(runLine.Tokens);
+                                Engine.ConvertAllGlobals(Program.LastLines[Program.CurrentReadingLine].Tokens);
+                                Engine.ConvertAllVariables(Program.LastLines[Program.CurrentReadingLine].Tokens);
+                                Engine.ConvertAllMath(Program.LastLines[Program.CurrentReadingLine].Tokens);
+                                RunTokens(Program.LastLines[Program.CurrentReadingLine].Tokens);
                      
 
                             }
@@ -349,10 +358,146 @@ namespace KSharp
                 else if(tokens[0].VALUE == "if")
                 {
                     //if(30 == 30) { }
-                    
 
-                    
+                    var contidionTokens = TokensGetBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END);
+
+                    var runLines = LinesBetweenType(Program.LastLines, contidionTokens[0].Root.LineIndex, Token.TOKEN_TYPE.CON_START, Token.TOKEN_TYPE.CON_END);
+
+
+                    Token EqualityToken = contidionTokens.Find(x => x.TYPE == Token.TOKEN_TYPE.CONDITION);
+
+                    if(EqualityToken == null)
+                    {
+                        Debug.Error("Condition could not be found. At line " + contidionTokens[0].Root.LineIndex);
+
+                    }
+
+                    if(TryGetTokenAtIndex(tokens,EqualityToken.INDEX-1,out Token LeftToken))
+                    {
+                        if (TryGetTokenAtIndex(tokens, EqualityToken.INDEX + 1, out Token RightToken))
+                        {
+                            if(EqualityToken.VALUE == "==")
+                            {
+                                //Console.WriteLine($"[{LeftToken.VALUE}] ?= [{RightToken.VALUE}]");
+                                if(LeftToken.VALUE == RightToken.VALUE)
+                                {
+                                    Debug.Success("TRUE");
+
+
+                                }
+                                else
+                                {
+                                    Debug.Warning("FALSE");
+                                    Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
+                                }
+                            }
+                            else if(EqualityToken.VALUE == ">")
+                            {
+                                try
+                                {
+                                    if (int.Parse(LeftToken.VALUE) > int.Parse(RightToken.VALUE))
+                                    {
+                                        Debug.Success("TRUE");
+
+
+                                    }
+                                    else
+                                    {
+                                        Debug.Warning("FALSE");
+                                        Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
+                                    }
+                                }
+                                catch
+                                {
+                                    Debug.Error("Can not use that operator in if condition with un-integer values at line " + EqualityToken.Root.LineIndex);
+                                }
+
+                            }
+                            else if (EqualityToken.VALUE == "<")
+                            {
+                                try
+                                {
+                                    if (int.Parse(LeftToken.VALUE) < int.Parse(RightToken.VALUE))
+                                    {
+                                        Debug.Success("TRUE");
+
+
+                                    }
+                                    else
+                                    {
+                                        Debug.Warning("FALSE");
+                                        Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
+                                    }
+                                }
+                                catch
+                                {
+                                    Debug.Error("Can not use that operator in if condition with un-integer values at line " + EqualityToken.Root.LineIndex);
+                                }
+                            }
+                            else if (EqualityToken.VALUE == ">=")
+                            {
+                                try
+                                {
+                                    if (int.Parse(LeftToken.VALUE) >= int.Parse(RightToken.VALUE))
+                                    {
+                                        Debug.Success("TRUE");
+
+
+                                    }
+                                    else
+                                    {
+                                        Debug.Warning("FALSE");
+                                        Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
+                                    }
+                                }
+                                catch(Exception ex)
+                                {
+                                    Debug.Info(ex.Message);
+                                    Debug.Error("Can not use that operator in if condition with un-integer values at line " + EqualityToken.Root.LineIndex);
+                                }
+                            }
+                            else if (EqualityToken.VALUE == "<=")
+                            {
+                                try
+                                {
+                                    if (int.Parse(LeftToken.VALUE) <= int.Parse(RightToken.VALUE))
+                                    {
+                                        Debug.Success("TRUE");
+
+
+                                    }
+                                    else
+                                    {
+                                        Debug.Warning("FALSE");
+                                        Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
+                                    }
+                                }
+                                catch
+                                {
+                                    Debug.Error("Can not use that operator in if condition with un-integer values at line " + EqualityToken.Root.LineIndex);
+                                }
+                            }
+
+
+                        }
+                        else
+                        {
+                            Debug.Error("Value on the right not be found. At line " + contidionTokens[0].Root.LineIndex);
+                        }
+
+                    }
+                    else
+                    {
+                        Debug.Error("Value on the left be found. At line " + contidionTokens[0].Root.LineIndex);
+
+                    }
+
+
+
+
+
                 }
+               
                 else
                 {
                     if (tokens[0].VALUE != "")
@@ -447,6 +592,48 @@ namespace KSharp
 
             return TO_RETURN;
             
+
+
+        }
+    
+        private static List<Token> TokensGetBetweenType(List<Token> tokens, Token.TOKEN_TYPE type1, Token.TOKEN_TYPE type2)
+        {
+            List<Token> TO_RETURN = new List<Token>();
+
+            try
+            {
+                var first = tokens.Find(x => x.TYPE == type1);
+                var last = tokens.FindLast(x => x.TYPE == type2);
+
+                if (first != null && last != null)
+                {
+                    for (int i = first.INDEX + 1; i < last.INDEX; i++)
+                    {
+                        TO_RETURN.Add(tokens[i]);
+
+
+                    }
+                }
+                else
+                {
+                    return null;
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+                Debug.Error(ex.Message);
+                if (ex == default(ArgumentNullException))
+                {
+                    Debug.Error($"At line {tokens[0].Root.LineIndex} could not find the type : {type1} or {type2}");
+                }
+
+                return null;
+
+            }
+
+            return TO_RETURN;
 
 
         }
