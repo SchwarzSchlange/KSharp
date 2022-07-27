@@ -5,26 +5,31 @@ The better and clear version of KMLANG
 ### A Piece of example code
 
 ``` ruby
-DEBUG ON
-
-push INFO(Program ( $GL_VER ) started at $GL_DIRECTORY [ $GL_TIME ])
-
-echo ($INFO)
-
-userinput name
-
-userinput last
-
-echo(Welcome $name $last)
-
 DEBUG OFF
 
-push i(0)
+push username(admin)
+push password(123)
 
-loop(20)
+push try_limit(10)
+
+echo(Password Checker Example)
+
+loop($try_limit)
 {
-	push i(m[($i+1)*2]m)
-	echo($i)
+	echo(Enter username : )
+	userinput in_name
+	echo(Enter password : )
+	userinput in_pass
+
+	if($username == $in_name)
+	{
+		if($password == $in_pass)
+		{
+			echo(Logined!)
+		}
+	}
+
+
 }
 
 ```
