@@ -31,7 +31,9 @@ namespace KSharp
             MATH_START,
             MATH_END,
             MATH_TO_UPDATE,
-            COMMA
+            COMMA,
+            CONDITION
+
 
 
            

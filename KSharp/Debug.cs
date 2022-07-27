@@ -9,6 +9,8 @@ namespace KSharp
     public class Debug
     {
         public static bool IsDebug = true;
+        public static bool IsDeveloperMode = false;
+
 
         public static void Warning(string content)
         {
@@ -33,13 +35,13 @@ namespace KSharp
         }
 
         public static void Error(string content)
-        {
-            if(IsDebug)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"[{TimeZone.CurrentTimeZone.ToLocalTime(DateTime.Now).ToLongTimeString()}] {content}");
-                Console.ForegroundColor = ConsoleColor.White;
-            }
+        { 
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"[{TimeZone.CurrentTimeZone.ToLocalTime(DateTime.Now).ToLongTimeString()}] {content}");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.ReadKey();
+            Environment.Exit(0);
+            Console.WriteLine("Press any key to exit...");
 
         }
 
