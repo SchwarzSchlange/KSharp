@@ -2,7 +2,7 @@
 The better and clear version of KMLANG
 
 
-### A Piece of code that contains all the features i added
+### A Piece of example code
 
 ``` ruby
 DEBUG ON
