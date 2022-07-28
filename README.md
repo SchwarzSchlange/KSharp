@@ -34,5 +34,33 @@ loop($try_limit)
 
 ```
 
+``` ruby
+DEBUG ON
+
+block sum(a,b)
+{
+
+	echo(m[$a+$b]m)
+
+}
+
+
+loop(999)
+{
+	userinput x
+	userinput y
+
+	call topla($x,$y)
+}
+
+
+
+
+
+
+
+```
+
+
 ### Used Library to Math Parse : org.mariuszgromada.math.mxparser | http://mathparser.org 
 I downloaded from Nuget
