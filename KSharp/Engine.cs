@@ -200,8 +200,8 @@ namespace KSharp
 
                 if (expression != null)
                 {
-                    //expression = expression.Replace(" ", "");
-
+                    expression = expression.Replace(" ", "");
+              
                     Debug.Success("EXPRESSION = " + expression);
                     Expression losung = new Expression(expression);
                     var calc = losung.calculate();
@@ -262,7 +262,7 @@ namespace KSharp
                     }
                     //Console.WriteLine("STATIC CONVERT : " + to_static_express);
 
-
+                    to_static_express = to_static_express.Replace(" ", "");
                     //Debug.Success("STATIC EXPRESSION = " + to_static_express);
                     Expression losung = new Expression(to_static_express);
                     var calc = losung.calculate();
