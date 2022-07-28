@@ -9,7 +9,8 @@ namespace KSharp
 {
     class Program
     {
-        public const string VERSION = "1.1";
+        public const string VERSION = "1.4";
+        public const int LINE_RUN_DELAY = 1;
         public static string SCRIPT_PATH;
         public static List<Line> LastLines = new List<Line>();
 
@@ -19,7 +20,7 @@ namespace KSharp
         {
             InitilazeConsole();
 
-            Console.Write("Script Directory : ");
+            Console.Write("Script path => ");
             SCRIPT_PATH = Console.ReadLine();
 
             if(!File.Exists(SCRIPT_PATH))
@@ -30,7 +31,6 @@ namespace KSharp
 
             LastLines = Parser.ParseFile(SCRIPT_PATH);
 
-            //Console.Clear();
 
             for(CurrentReadingLine = 0; CurrentReadingLine < LastLines.Count; CurrentReadingLine++)
             {
@@ -60,8 +60,9 @@ namespace KSharp
 
         private static void InitilazeConsole()
         {
+            Console.OutputEncoding = Encoding.Default;
+            Console.Title = $"K# | {VERSION} | Developer Mode : " + Debug.IsDeveloperMode;
             
-            Console.Title = $"KSharp | Kaan Temizkan | {VERSION} | Developer Mode : " + Debug.IsDeveloperMode;
             Console.ForegroundColor = ConsoleColor.White;
         }
     }

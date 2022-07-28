@@ -8,9 +8,48 @@ using org.mariuszgromada.math.mxparser;
 
 namespace KSharp
 {
-    class Engine
+    public class Engine
     {
         private static Dictionary<string, object> Variables = new Dictionary<string, object>();
+
+        private static List<Block> Blocks = new List<Block>();
+
+        public static void AddOverideBlock(string Name,string[] Parameters,List<Line> Lines)
+        {
+            Block block = Blocks.Find(x => x.Name == Name);
+
+            if(block != null)
+            {
+                block.Name = Name;
+                block.Lines = Lines;
+                block.Paramaters = Parameters;
+                Debug.Success($"'{Name}' is overriden");
+            }
+            else
+            {
+                Blocks.Add(new Block(Name, Lines, Parameters));
+                Debug.Success($"'{Name}' is added");
+            }
+        }
+
+        public static bool TryGetBlock(string Name,out Block _block)
+        {
+            Block block = Blocks.Find(x => x.Name == Name);
+
+            if(block != null)
+            {
+
+                _block = block;
+                return true;
+            }
+            else
+            {
+                _block = null;
+                return false;
+            }
+
+  
+        }
 
 
         public static void AddVariable(string Key,object Value)
@@ -24,6 +63,11 @@ namespace KSharp
                 Variables.Add(Key, Value);
             }
 
+        }
+
+        public static void RemoveVariable(string Key)
+        {
+            Variables.Remove(Key);
         }
 
         public static bool TryGetVariable(string Key,out object _out)
@@ -239,7 +283,9 @@ namespace KSharp
 
         }
 
-        public static void RunTokens(List<Token> tokens)
+        static bool isBreak = false;
+
+        public static void RunTokens(List<Token> tokens, bool calledInLoop = false)
         {
             if (tokens.Count != 0)
             {
@@ -259,7 +305,7 @@ namespace KSharp
                         }
                         var to_attach_value = StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END);
                       
-                        Engine.AddVariable(name_token.VALUE, to_attach_value);
+                        AddVariable(name_token.VALUE, to_attach_value);
                         Debug.Success($"[{name_token.STATIC_VALUE}] attached as [{to_attach_value}]");
                     }
                     else
@@ -267,7 +313,7 @@ namespace KSharp
                         Debug.Error($"Name of the variable could not be found at line {tokens[0].Root.LineIndex}");
                     }
 
- 
+                
                 }
                 else if(tokens[0].VALUE == "delay")
                 {
@@ -332,18 +378,33 @@ namespace KSharp
                         var runLines = LinesBetweenType(Program.LastLines, tokens[0].Root.LineIndex,Token.TOKEN_TYPE.CON_START, Token.TOKEN_TYPE.CON_END);
 
                         
-                        for(int i = 1; i < LoopCount;i++)
+                        for(int i = 1; i <= LoopCount;i++)
                         {
-                            for (Program.CurrentReadingLine = runLines.First().LineIndex-1;Program.CurrentReadingLine < runLines.Last().LineIndex-1;Program.CurrentReadingLine++)
+                            for (Program.CurrentReadingLine = runLines.First().LineIndex-1;Program.CurrentReadingLine < runLines.Last().LineIndex;Program.CurrentReadingLine++)
                             {
+
+                                if(isBreak)
+                                {
+                                    Debug.Info("Breaking the inner loop.");
+                                    break;
+                                }
                                 Engine.ConvertAllGlobals(Program.LastLines[Program.CurrentReadingLine].Tokens);
                                 Engine.ConvertAllVariables(Program.LastLines[Program.CurrentReadingLine].Tokens);
                                 Engine.ConvertAllMath(Program.LastLines[Program.CurrentReadingLine].Tokens);
-                                RunTokens(Program.LastLines[Program.CurrentReadingLine].Tokens);
+                                RunTokens(Program.LastLines[Program.CurrentReadingLine].Tokens,true);
                      
+                                
+                            }
 
+                            if (isBreak)
+                            {
+                                Debug.Info("Breaking the outer loop.");
+                                isBreak = false;
+                                break;
                             }
                         }
+
+                        Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
                     }
                     else
                     {
@@ -477,12 +538,27 @@ namespace KSharp
                                     Debug.Error("Can not use that operator in if condition with un-integer values at line " + EqualityToken.Root.LineIndex);
                                 }
                             }
+                            else if (EqualityToken.VALUE == "!=")
+                            {
+                                //Console.WriteLine($"[{LeftToken.VALUE}] ?= [{RightToken.VALUE}]");
+                                if (LeftToken.VALUE != RightToken.VALUE)
+                                {
+                                    Debug.Success("TRUE");
+
+
+                                }
+                                else
+                                {
+                                    Debug.Warning("FALSE");
+                                    Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
+                                }
+                            }
 
 
                         }
                         else
                         {
-                            Debug.Error("Value on the right not be found. At line " + contidionTokens[0].Root.LineIndex);
+                            Debug.Error("Value on the right be found. At line " + contidionTokens[0].Root.LineIndex);
                         }
 
                     }
@@ -496,6 +572,127 @@ namespace KSharp
 
 
 
+                }
+                else if(tokens[0].VALUE == "break")
+                {
+                    if(calledInLoop)
+                    {
+                        isBreak = true;
+                    }
+                    else
+                    {
+                        Debug.Warning("Break command could only in loops called.");
+                    }
+                }
+                else if(tokens[0].VALUE == "block")
+                {
+                    if(calledInLoop)
+                    {
+                        Debug.Error("You can't add a block in a loop!");
+                    }
+                    if (TryGetTokenAtIndex(tokens, 1, out Token name_token))
+                    {
+                        if (char.IsDigit(name_token.VALUE[0]))
+                        {
+                            Debug.Error($"A block could not start with a digit. At line {tokens[0].Root.LineIndex}");
+                        }
+
+                        var runLines = LinesBetweenType(Program.LastLines, tokens[0].Root.LineIndex, Token.TOKEN_TYPE.CON_START, Token.TOKEN_TYPE.CON_END);
+
+                        var parameters_string = StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END);
+                        parameters_string = parameters_string.Trim();
+                        string[] param_list = parameters_string.Split(',');
+
+                        if(param_list.Length == 0)
+                        {
+                            param_list[0] = parameters_string;
+                        }
+
+                        Debug.Info("Parameter : " + parameters_string);
+
+                        AddOverideBlock(name_token.VALUE, param_list, runLines);
+
+                        Program.CurrentReadingLine = runLines.Last().LineIndex-1;
+                    }
+                    else
+                    {
+                        Debug.Error($"Block must have a name to call. At line {tokens[0].Root.LineIndex}");
+                    }
+                }
+                else if(tokens[0].VALUE == "call")
+                {
+                    //call x(parameters)
+                    if (TryGetTokenAtIndex(tokens, 1, out Token name_token))
+                    {
+                        if (char.IsDigit(name_token.VALUE[0]))
+                        {
+                            Debug.Error($"A call method could not start with a digit. At line {tokens[0].Root.LineIndex}");
+                        }
+
+                        var parameters_string = StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END);
+                        parameters_string = parameters_string.Trim();
+                        string[] param_list = parameters_string.Split(',');
+
+                        if(param_list[0] == "")
+                        {
+                            Debug.Error($"All of the parameters must be included for block '{name_token.VALUE}' at line {name_token.Root.LineIndex} {Environment.NewLine} Given parameters : '{parameters_string}'");
+                            param_list = null;
+                        }
+                        
+                        Debug.Info("Send Parameter : " + parameters_string);
+
+                        if (TryGetBlock(name_token.VALUE, out Block _block))
+                        {
+                            Debug.Success($"Block found : '{name_token.VALUE}'");
+                        }
+                        else
+                        {
+                            Debug.Error($"Block '{name_token.VALUE}' could not be found. At line {name_token.Root.LineIndex}");
+                        }
+
+                        //PARAMETER CHECK
+   
+                        if(_block.Paramaters.Length > 0)
+                        {
+                            
+                            if(_block.Paramaters.Length != param_list.Length)
+                                Debug.Error($"All of the parameters must be included for block '{name_token.VALUE}' at line {name_token.Root.LineIndex} {Environment.NewLine} Given parameters : {parameters_string}");
+                        }
+
+                        int call_index = Program.CurrentReadingLine;
+
+                        for(int i = 0;i < _block.Paramaters.Length;i++)
+                        {
+                            _block.Paramaters[i] = _block.Paramaters[i].Trim();
+                            AddVariable(_block.Paramaters[i], param_list[i]);
+                        }
+
+                        //RUN BLOCK
+                        for (Program.CurrentReadingLine = _block.Lines.First().LineIndex - 1; Program.CurrentReadingLine < _block.Lines.Last().LineIndex; Program.CurrentReadingLine++)
+                        {
+
+                            Engine.ConvertAllGlobals(Program.LastLines[Program.CurrentReadingLine].Tokens);
+                            Engine.ConvertAllVariables(Program.LastLines[Program.CurrentReadingLine].Tokens);
+                            Engine.ConvertAllMath(Program.LastLines[Program.CurrentReadingLine].Tokens);
+                            RunTokens(Program.LastLines[Program.CurrentReadingLine].Tokens);
+
+
+                        }
+                        //END BLOCK
+
+                        for (int i = 0; i < _block.Paramaters.Length; i++)
+                        {
+                            _block.Paramaters[i] = _block.Paramaters[i].Trim();
+                            RemoveVariable(_block.Paramaters[i]);
+                        }
+
+                        //BACK TO CALL LINE
+                        Program.CurrentReadingLine = call_index;
+                    }
+                    else
+                    {
+                        Debug.Error($"Block must have a name to call. At line {tokens[0].Root.LineIndex}");
+                    }
                 }
                
                 else
@@ -513,22 +710,23 @@ namespace KSharp
                 }
             }
 
+            Thread.Sleep(Program.LINE_RUN_DELAY);
+
    
         }
 
         private static List<Line> LinesBetweenType(List<Line> lines, int start_index,Token.TOKEN_TYPE type1, Token.TOKEN_TYPE type2)
         {
-            
-                Line Start = lines.Find(x => x.Tokens.Count > 0 && x.Tokens[0].TYPE == type1 && x.LineIndex >start_index);
-                Debug.Success(Start.LineIndex.ToString());
-                Line End = lines.Find(x => x.Tokens.Count > 0 && x.Tokens[0].TYPE == type2 && x.LineIndex > Start.LineIndex && x.Tokens[0].LAYER == Start.Tokens[0].LAYER);
-                Debug.Success(End.LineIndex.ToString());
+            Line Start = lines.Find(x => x.Tokens.Count > 0 && x.Tokens[0].TYPE == type1 && x.LineIndex >start_index);
+            Debug.Success("Start Line : " + Start.LineIndex.ToString());
+            Line End = lines.Find(x => x.Tokens.Count > 0 && x.Tokens[0].TYPE == type2 && x.LineIndex > Start.LineIndex && x.Tokens[0].LAYER == Start.Tokens[0].LAYER);
+            Debug.Success("End Line : "+End.LineIndex.ToString());
 
-                var between_lines = lines.FindAll(x => x.LineIndex > Start.LineIndex && x.LineIndex < End.LineIndex);
-                return between_lines;
-            
-        
-
+            var between_lines = lines.FindAll(x => x.LineIndex > Start.LineIndex && x.LineIndex < End.LineIndex);
+            //Debug.Success(between_lines.First().LineIndex.ToString());
+            //Debug.Success(between_lines.Last().LineIndex.ToString());
+            return between_lines;
+   
         }
 
         private static string StringGetValueBetweenType(List<Token> tokens,Token.TOKEN_TYPE type1, Token.TOKEN_TYPE type2,bool returnStatics = false)

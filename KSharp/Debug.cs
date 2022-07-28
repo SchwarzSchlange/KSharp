@@ -27,7 +27,7 @@ namespace KSharp
         {
             if(IsDebug)
             {
-                Console.ForegroundColor = ConsoleColor.Green;
+                Console.ForegroundColor = ConsoleColor.Magenta;
                 Console.WriteLine($"[{TimeZone.CurrentTimeZone.ToLocalTime(DateTime.Now).ToLongTimeString()}] {content}");
                 Console.ForegroundColor = ConsoleColor.White;
             }
@@ -49,7 +49,7 @@ namespace KSharp
         {
             if(IsDebug)
             {
-                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.ForegroundColor = ConsoleColor.DarkMagenta;
                 Console.WriteLine($"[{TimeZone.CurrentTimeZone.ToLocalTime(DateTime.Now).ToLongTimeString()}] {content}");
                 Console.ForegroundColor = ConsoleColor.White;
             }

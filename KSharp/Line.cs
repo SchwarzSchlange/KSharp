@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace KSharp
 {
-    class Line
+    public class Line
     {
         public int LineIndex { get; set; }
         public List<Token> Tokens { get; set; }
