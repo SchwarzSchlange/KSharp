@@ -49,15 +49,38 @@ loop(999)
 {
 	userinput x
 	userinput y
-
+	
 	call topla($x,$y)
 }
 
+```
 
+``` ruby
+DEBUG OFF
 
+block isPrime(number)
+{
+	if(m[ispr($number)]m == 1)
+	{
+		echo("$number" is a prime number)
+	}
 
+}
 
+echo(Prime number finder by Kaan Temizkan)
 
+echo(------------------)
+
+echo(Enter a limit : )
+userinput limit
+
+push i(1)
+
+loop($limit)
+{
+	call isPrime($i);	
+	push i(m[$i+1]m)
+}
 
 ```
 
