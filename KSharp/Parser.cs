@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace KSharp
 {
-    class Parser
+    public class Parser
     {
 
         public static List<Line> ParseFile(string path)
@@ -118,6 +118,11 @@ namespace KSharp
                         Token token = new Token(k, Token.TOKEN_TYPE.CONDITION, x, my_line);
                         my_tokens.Add(token);
                     }
+                    else if(x == "!=")
+                    {
+                        Token token = new Token(k, Token.TOKEN_TYPE.CONDITION, x, my_line);
+                        my_tokens.Add(token);
+                    }
                     else if(k == 0)
                     {
                         if(x != "")
@@ -213,6 +218,7 @@ namespace KSharp
             line = line.Replace("<=", " <= ");
             line = line.Replace(">>", " >> ");
             line = line.Replace("<<", " << ");
+            line = line.Replace("<<", " != ");
             return line.Split(' ');
         }
     }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace KSharp
 {
-    class Token
+    public class Token
     {
         public enum TOKEN_TYPE
         {
