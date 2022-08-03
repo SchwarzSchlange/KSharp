@@ -15,12 +15,9 @@ namespace KSharp
 
             BREC_START,
             BREC_END,
-
             QUOTE,
-
             CON_START,
             CON_END,
-
             VARIABLE,
             GLOBAL,
             NULL,
@@ -33,10 +30,6 @@ namespace KSharp
             MATH_TO_UPDATE,
             COMMA,
             CONDITION
-
-
-
-           
         };
 
         public int INDEX { get; set; }
@@ -44,9 +37,11 @@ namespace KSharp
         public string VALUE { get; set; }
         public string STATIC_VALUE { get; set; }
         public int LAYER { get; set; }
+        public int UNION { get; set; }
         public Line Root { get; set; }
+        
 
-        public Token(int index,TOKEN_TYPE type,string value,Line root,int layer = 0)
+        public Token(int index,TOKEN_TYPE type,string value,Line root,int layer = 0,int union = 0)
         {
             this.INDEX = index;
             this.TYPE = type;
@@ -54,6 +49,7 @@ namespace KSharp
             this.Root = root;
             STATIC_VALUE = value;
             this.LAYER = layer;
+            this.UNION = union;
         }
   
     }
