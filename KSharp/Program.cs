@@ -50,7 +50,7 @@ namespace KSharp
                 }
 
 
-                Engine.RunTokens(LastLines[CurrentReadingLine].Tokens);
+                Engine.RunTokens(LastLines[CurrentReadingLine],LastLines[CurrentReadingLine].Tokens);
 
             }
 

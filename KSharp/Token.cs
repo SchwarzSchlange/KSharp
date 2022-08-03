@@ -12,7 +12,7 @@ namespace KSharp
         {
             COMMAND,
             NORMAL,
-
+            ELSE,
             BREC_START,
             BREC_END,
             QUOTE,
