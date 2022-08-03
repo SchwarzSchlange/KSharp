@@ -286,17 +286,26 @@ namespace KSharp
 
         static bool isBreak = false;
 
-        public static void RunTokens(List<Token> tokens, bool calledInLoop = false,bool calledInBlock = false)
+        public static void RunTokens(Line RunningLine,List<Token> tokens, bool calledInLoop = false,bool calledInBlock = false)
         {
+            if(RunningLine.isGonnaPassed)
+            {
+                RunningLine.isGonnaPassed = false;
+                Program.CurrentReadingLine++;
+                return;
+            }
+
             if (tokens.Count != 0)
             {
                 if (tokens[0].VALUE == "echo")
                 {
                     Console.WriteLine(StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END));
                 }
-                else if(tokens[0].VALUE == "INCLUDE")
+                else if(tokens[0].VALUE == "TITLE")
                 {
-                    Console.WriteLine(StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END, false, 0));
+                    var title = StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END, false, 0);
+
+                    Console.Title = title;
 
                 }
                 else if(tokens[0].VALUE == "echo_a")
@@ -325,7 +334,7 @@ namespace KSharp
 
                 
                 }
-                else if(tokens[0].VALUE == "delay")
+                else if(tokens[0].VALUE == "WAIT")
                 {
                     if (TryGetTokenAtIndex(tokens, 1, out Token dur_token))
                     {
@@ -421,7 +430,7 @@ namespace KSharp
                                 Engine.ConvertAllGlobals(Program.LastLines[Program.CurrentReadingLine].Tokens);
                                 Engine.ConvertAllVariables(Program.LastLines[Program.CurrentReadingLine].Tokens);
                                 Engine.ConvertAllMath(Program.LastLines[Program.CurrentReadingLine].Tokens);
-                                RunTokens(Program.LastLines[Program.CurrentReadingLine].Tokens,true);
+                                RunTokens(Program.LastLines[Program.CurrentReadingLine], Program.LastLines[Program.CurrentReadingLine].Tokens,true);
                      
                                 
                             }
@@ -442,7 +451,7 @@ namespace KSharp
                         return;
                     }
                 }
-                else if(tokens[0].VALUE == "clear")
+                else if(tokens[0].VALUE == "CLEARSC")
                 {
                     Console.Clear();
                 }
@@ -453,6 +462,17 @@ namespace KSharp
                     var contidionTokens = TokensGetBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END);
 
                     var runLines = LinesBetweenType(Program.LastLines, contidionTokens[0].Root.LineIndex, Token.TOKEN_TYPE.CON_START, Token.TOKEN_TYPE.CON_END);
+
+                    var elseLines = LinesBetweenType(Program.LastLines, runLines.Last().LineIndex, Token.TOKEN_TYPE.CON_START, Token.TOKEN_TYPE.CON_END);
+
+                    bool isElse = false;
+                    if(elseLines != null)
+                    {
+                        isElse = true;
+                    }
+
+                
+
 
 
                     Token EqualityToken = contidionTokens.Find(x => x.TYPE == Token.TOKEN_TYPE.CONDITION);
@@ -475,11 +495,30 @@ namespace KSharp
                                     Debug.Success("TRUE");
 
 
+                                    if(isElse)
+                                    {
+                                        foreach(var ElseLine in elseLines)
+                                        {
+                                            ElseLine.isGonnaPassed = true;
+                                        }
+                                    }
+                                 
+
+
                                 }
                                 else
                                 {
-                                    Debug.Warning("FALSE");
-                                    Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
+                                    Debug.Info("FALSE");
+                                    if(isElse)
+                                    {
+                                        Program.CurrentReadingLine = elseLines.First().LineIndex - 2;
+                                    }
+                                    else
+                                    {
+                                  
+                                        Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
+                                    }
+                                    
                                 }
                             }
                             else if(EqualityToken.VALUE == ">>")
@@ -491,11 +530,26 @@ namespace KSharp
                                         Debug.Success("TRUE");
 
 
+                                        if (isElse)
+                                        {
+                                            foreach (var ElseLine in elseLines)
+                                            {
+                                                ElseLine.isGonnaPassed = true;
+                                            }
+                                        }
                                     }
                                     else
                                     {
                                         Debug.Warning("FALSE");
-                                        Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
+                                        if (isElse)
+                                        {
+                                            Program.CurrentReadingLine = elseLines.First().LineIndex - 2;
+                                        }
+                                        else
+                                        {
+
+                                            Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
+                                        }
                                     }
                                 }
                                 catch
@@ -513,11 +567,26 @@ namespace KSharp
                                         Debug.Success("TRUE");
 
 
+                                        if (isElse)
+                                        {
+                                            foreach (var ElseLine in elseLines)
+                                            {
+                                                ElseLine.isGonnaPassed = true;
+                                            }
+                                        }
                                     }
                                     else
                                     {
                                         Debug.Warning("FALSE");
-                                        Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
+                                        if (isElse)
+                                        {
+                                            Program.CurrentReadingLine = elseLines.First().LineIndex - 2;
+                                        }
+                                        else
+                                        {
+
+                                            Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
+                                        }
                                     }
                                 }
                                 catch
@@ -534,11 +603,26 @@ namespace KSharp
                                         Debug.Success("TRUE");
 
 
+                                        if (isElse)
+                                        {
+                                            foreach (var ElseLine in elseLines)
+                                            {
+                                                ElseLine.isGonnaPassed = true;
+                                            }
+                                        }
                                     }
                                     else
                                     {
                                         Debug.Warning("FALSE");
-                                        Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
+                                        if (isElse)
+                                        {
+                                            Program.CurrentReadingLine = elseLines.First().LineIndex - 2;
+                                        }
+                                        else
+                                        {
+
+                                            Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
+                                        }
                                     }
                                 }
                                 catch(Exception ex)
@@ -556,11 +640,26 @@ namespace KSharp
                                         Debug.Success("TRUE");
 
 
+                                        if (isElse)
+                                        {
+                                            foreach (var ElseLine in elseLines)
+                                            {
+                                                ElseLine.isGonnaPassed = true;
+                                            }
+                                        }
                                     }
                                     else
                                     {
                                         Debug.Warning("FALSE");
-                                        Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
+                                        if (isElse)
+                                        {
+                                            Program.CurrentReadingLine = elseLines.First().LineIndex - 2;
+                                        }
+                                        else
+                                        {
+
+                                            Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
+                                        }
                                     }
                                 }
                                 catch
@@ -576,11 +675,26 @@ namespace KSharp
                                     Debug.Success("TRUE");
 
 
+                                    if (isElse)
+                                    {
+                                        foreach (var ElseLine in elseLines)
+                                        {
+                                            ElseLine.isGonnaPassed = true;
+                                        }
+                                    }
                                 }
                                 else
                                 {
                                     Debug.Warning("FALSE");
-                                    Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
+                                    if (isElse)
+                                    {
+                                        Program.CurrentReadingLine = elseLines.First().LineIndex - 2;
+                                    }
+                                    else
+                                    {
+
+                                        Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
+                                    }
                                 }
                             }
 
@@ -603,7 +717,7 @@ namespace KSharp
 
 
                 }
-                else if(tokens[0].VALUE == "break")
+                else if(tokens[0].VALUE == "BREAK")
                 {
                     if(calledInLoop)
                     {
@@ -743,7 +857,7 @@ namespace KSharp
                             Engine.ConvertAllGlobals(Program.LastLines[Program.CurrentReadingLine].Tokens);
                             Engine.ConvertAllVariables(Program.LastLines[Program.CurrentReadingLine].Tokens);
                             Engine.ConvertAllMath(Program.LastLines[Program.CurrentReadingLine].Tokens);
-                            RunTokens(Program.LastLines[Program.CurrentReadingLine].Tokens,false,true);
+                            RunTokens(Program.LastLines[Program.CurrentReadingLine], Program.LastLines[Program.CurrentReadingLine].Tokens,false,true);
 
 
                         }
@@ -774,7 +888,7 @@ namespace KSharp
                 {
                     if (tokens[0].VALUE != "")
                     {
-                        if(tokens[0].TYPE != Token.TOKEN_TYPE.CON_START && tokens[0].TYPE != Token.TOKEN_TYPE.CON_END && tokens[0].TYPE != Token.TOKEN_TYPE.GLOBAL)
+                        if(tokens[0].TYPE != Token.TOKEN_TYPE.CON_START && tokens[0].TYPE != Token.TOKEN_TYPE.CON_END && tokens[0].TYPE != Token.TOKEN_TYPE.GLOBAL && tokens[0].TYPE != Token.TOKEN_TYPE.ELSE)
                         {
                             Debug.Error($"Unknown Command : '{tokens[0].VALUE}' at line {tokens[0].Root.LineIndex}");
 
@@ -796,15 +910,22 @@ namespace KSharp
 
         private static List<Line> LinesBetweenType(List<Line> lines, int start_index,Token.TOKEN_TYPE type1, Token.TOKEN_TYPE type2)
         {
-            Line Start = lines.Find(x => x.Tokens.Count > 0 && x.Tokens[0].TYPE == type1 && x.LineIndex > start_index);
-            Debug.Success("Start Line : " + Start.LineIndex.ToString());
-            Line End = lines.Find(x => x.Tokens.Count > 0 && x.Tokens[0].TYPE == type2 && x.LineIndex > Start.LineIndex && x.Tokens[0].LAYER == Start.Tokens[0].LAYER);
-            Debug.Success("End Line : "+End.LineIndex.ToString());
+            try
+            {
+                Line Start = lines.Find(x => x.Tokens.Count > 0 && x.Tokens[0].TYPE == type1 && x.LineIndex > start_index);
 
-            var between_lines = lines.FindAll(x => x.LineIndex > Start.LineIndex && x.LineIndex < End.LineIndex);
-            //Debug.Success(between_lines.First().LineIndex.ToString());
-            //Debug.Success(between_lines.Last().LineIndex.ToString());
-            return between_lines;
+                Line End = lines.Find(x => x.Tokens.Count > 0 && x.Tokens[0].TYPE == type2 && x.LineIndex > Start.LineIndex && x.Tokens[0].LAYER == Start.Tokens[0].LAYER);
+
+
+                var between_lines = lines.FindAll(x => x.LineIndex > Start.LineIndex && x.LineIndex < End.LineIndex);
+
+                return between_lines;
+            }
+            catch
+            {
+                return null;
+            }
+
    
         }
 

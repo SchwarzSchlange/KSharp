@@ -10,6 +10,7 @@ namespace KSharp
     {
         public int LineIndex { get; set; }
         public List<Token> Tokens { get; set; }
+        public bool isGonnaPassed = false;
 
     }
 }

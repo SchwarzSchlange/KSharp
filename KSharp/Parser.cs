@@ -126,7 +126,11 @@ namespace KSharp
                         Token token = new Token(k, Token.TOKEN_TYPE.CONDITION, x, my_line, c_union);
                         my_tokens.Add(token);
                     }
-
+                    else if(x == "else")
+                    {
+                        Token token = new Token(k, Token.TOKEN_TYPE.ELSE, x, my_line, c_union);
+                        my_tokens.Add(token);
+                    }
                     else if(x == "")
                     {
                         k--;
@@ -144,18 +148,6 @@ namespace KSharp
                             
                             
                         }
-                        else if(k == 0)
-                        {
-                            if (x != "")
-                            {
-                                Token token = new Token(k, Token.TOKEN_TYPE.COMMAND, x, my_line,0, c_union);
-                                my_tokens.Add(token);
-                            }
-                            else
-                            {
-                                k--;
-                            }
-                        }
                         else
                         {
                             if(x.Contains("$"))
@@ -169,6 +161,20 @@ namespace KSharp
                                 my_tokens.Add(token);
 
                             }
+                          
+                            else if(k == 0)
+                            {
+                                if (x != "")
+                                {
+                                    Token token = new Token(k, Token.TOKEN_TYPE.COMMAND, x, my_line, 0, c_union);
+                                    my_tokens.Add(token);
+                                }
+                                else
+                                {
+                                    k--;
+                                }
+                            }
+
                             else
                             {
                                 Token token = new Token(k, Token.TOKEN_TYPE.NORMAL, x, my_line,0, c_union);
