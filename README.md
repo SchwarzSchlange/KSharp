@@ -6,31 +6,42 @@ The better and clear version of KMLANG
 
 ``` ruby
 DEBUG OFF
+TITLE(ADMIN ENTER)
+LROM 0
 
-push username(admin)
-push password(123)
 
-push try_limit(10)
 
-echo(Password Checker Example)
-
-loop($try_limit)
+loop(100)
 {
-	echo(Enter username : )
-	userinput in_name
-	echo(Enter password : )
-	userinput in_pass
+	echo_a(Admin Name : )
+	userinput gName
 
-	if($username == $in_name)
+
+	if($gName == admin)
 	{
-		if($password == $in_pass)
+		echo_a(Admin Password : )
+		userinput gPass
+		if($gPass == 123)
 		{
-			echo(Logined!)
+			BREAK
+		}
+		else
+		{
+			CLEARSC
+			echo(Password is false)
 		}
 	}
-
+	else
+	{
+		CLEARSC
+		echo(Username is false)
+	}
 
 }
+
+CLEARSC
+echo(Successfully Logined...)
+
 
 ```
 
