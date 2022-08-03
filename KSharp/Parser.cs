@@ -24,7 +24,7 @@ namespace KSharp
                 var my_line = new Line();
                 my_line.LineIndex = i;
                 string[] exp = ExplodeLineString(line);
-
+                int c_union = 0; 
                 List<Token> my_tokens = new List<Token>();
                 foreach(string expression in exp)
                 {
@@ -34,108 +34,99 @@ namespace KSharp
                     string quote = '"'.ToString();
                     if (x == "(")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.BREC_START, x, my_line,LayerIndent);
+                        Token token = new Token(k, Token.TOKEN_TYPE.BREC_START, x, my_line,LayerIndent, c_union);
                         
                         my_tokens.Add(token);
+                        c_union++;
                     }
                     else if (x == ")")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.BREC_END, x, my_line, LayerIndent); ;
+                        c_union--;
+                        Token token = new Token(k, Token.TOKEN_TYPE.BREC_END, x, my_line, LayerIndent, c_union); 
                         my_tokens.Add(token);
+                        
                     }
                     else if (x == "{")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.CON_START, x, my_line, LayerIndent);
+                        Token token = new Token(k, Token.TOKEN_TYPE.CON_START, x, my_line, LayerIndent, c_union);
                         my_tokens.Add(token);
                     }
                     else if (x == "}")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.CON_END, x, my_line, LayerIndent);
+                        Token token = new Token(k, Token.TOKEN_TYPE.CON_END, x, my_line, LayerIndent, c_union);
                         my_tokens.Add(token);
                     }
                     else if (x == quote)
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.QUOTE, x, my_line);
+                        Token token = new Token(k, Token.TOKEN_TYPE.QUOTE, x, my_line, c_union);
                         my_tokens.Add(token);
                     }
                     else if(x == "+")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.PLUS, x, my_line);
+                        Token token = new Token(k, Token.TOKEN_TYPE.PLUS, x, my_line, c_union);
                         my_tokens.Add(token);
                     }
                     else if (x == "-")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.MINUS, x, my_line);
+                        Token token = new Token(k, Token.TOKEN_TYPE.MINUS, x, my_line, c_union);
                         my_tokens.Add(token);
                     }
                     else if (x == "/")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.DIVIDER, x, my_line);
+                        Token token = new Token(k, Token.TOKEN_TYPE.DIVIDER, x, my_line, c_union);
                         my_tokens.Add(token);
                     }
                     else if (x == "*")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.MULTIP, x, my_line);
+                        Token token = new Token(k, Token.TOKEN_TYPE.MULTIP, x, my_line, c_union);
                         my_tokens.Add(token);
                     }
                     else if(x == "m[")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.MATH_START, x, my_line);
+                        Token token = new Token(k, Token.TOKEN_TYPE.MATH_START, x, my_line, c_union);
                         my_tokens.Add(token);
                     }
                     else if(x == "]m")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.MATH_END, x, my_line);
+                        Token token = new Token(k, Token.TOKEN_TYPE.MATH_END, x, my_line, c_union);
                         my_tokens.Add(token);
                     }
                     else if(x == ",")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.COMMA, x, my_line);
+                        Token token = new Token(k, Token.TOKEN_TYPE.COMMA, x, my_line, c_union);
                         my_tokens.Add(token);
                     }
                     else if(x == "==")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.CONDITION, x, my_line);
+                        Token token = new Token(k, Token.TOKEN_TYPE.CONDITION, x, my_line, c_union);
                         my_tokens.Add(token);
                     }
                     else if(x == ">>")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.CONDITION, x, my_line);
+                        Token token = new Token(k, Token.TOKEN_TYPE.CONDITION, x, my_line, c_union);
                         my_tokens.Add(token);
                     }
                     else if(x == "<<")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.CONDITION, x, my_line);
+                        Token token = new Token(k, Token.TOKEN_TYPE.CONDITION, x, my_line, c_union);
                         my_tokens.Add(token);
                     }
                     else if (x == "<=")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.CONDITION, x, my_line);
+                        Token token = new Token(k, Token.TOKEN_TYPE.CONDITION, x, my_line, c_union);
                         my_tokens.Add(token);
                     }
                     else if (x == ">=")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.CONDITION, x, my_line);
+                        Token token = new Token(k, Token.TOKEN_TYPE.CONDITION, x, my_line, c_union);
                         my_tokens.Add(token);
                     }
                     else if(x == "!=")
                     {
-                        Token token = new Token(k, Token.TOKEN_TYPE.CONDITION, x, my_line);
+                        Token token = new Token(k, Token.TOKEN_TYPE.CONDITION, x, my_line, c_union);
                         my_tokens.Add(token);
                     }
-                    else if(k == 0)
-                    {
-                        if(x != "")
-                        {
-                            Token token = new Token(k, Token.TOKEN_TYPE.COMMAND, x, my_line);
-                            my_tokens.Add(token);
-                        }
-                        else
-                        {
-                            k--;
-                        }
 
-                    }
                     else if(x == "")
                     {
                         k--;
@@ -148,10 +139,22 @@ namespace KSharp
                             //GLOBAL VARIABLE
                             var value = x.Replace("$GL_", "");
 
-                            Token token = new Token(k, Token.TOKEN_TYPE.GLOBAL, value, my_line);
+                            Token token = new Token(k, Token.TOKEN_TYPE.GLOBAL, value, my_line,0, c_union);
                             my_tokens.Add(token);
                             
                             
+                        }
+                        else if(k == 0)
+                        {
+                            if (x != "")
+                            {
+                                Token token = new Token(k, Token.TOKEN_TYPE.COMMAND, x, my_line,0, c_union);
+                                my_tokens.Add(token);
+                            }
+                            else
+                            {
+                                k--;
+                            }
                         }
                         else
                         {
@@ -161,14 +164,14 @@ namespace KSharp
                                 var value = x.Replace("$", "");
 
 
-                                Token token = new Token(k, Token.TOKEN_TYPE.VARIABLE, value, my_line);
+                                Token token = new Token(k, Token.TOKEN_TYPE.VARIABLE, value, my_line,0, c_union);
                                 token.STATIC_VALUE = x;
                                 my_tokens.Add(token);
 
                             }
                             else
                             {
-                                Token token = new Token(k, Token.TOKEN_TYPE.NORMAL, x, my_line);
+                                Token token = new Token(k, Token.TOKEN_TYPE.NORMAL, x, my_line,0, c_union);
                                 my_tokens.Add(token);
                             }
 
@@ -202,8 +205,6 @@ namespace KSharp
             line = line.Replace("(", " ( ");
             line = line.Replace(")", " ) ");
             line = line.Replace("(", " ( ");
-            //line = line.Replace("{", " { ");
-            //line = line.Replace("}", " } ");
             line = line.Replace("(", $" ( ");
 
             line = line.Replace("+", " + ");

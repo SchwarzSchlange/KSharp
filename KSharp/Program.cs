@@ -9,8 +9,8 @@ namespace KSharp
 {
     class Program
     {
-        public const string VERSION = "1.4";
-        public const int LINE_RUN_DELAY = 1;
+        public const string VERSION = "1.7";
+        public static int LINE_RUN_DELAY = 1;
         public static string SCRIPT_PATH;
         public static List<Line> LastLines = new List<Line>();
 
@@ -20,7 +20,7 @@ namespace KSharp
         {
             InitilazeConsole();
 
-            Console.Write("Script path => ");
+            Console.Write(">>> ");
             SCRIPT_PATH = Console.ReadLine();
 
             if(!File.Exists(SCRIPT_PATH))
@@ -43,7 +43,7 @@ namespace KSharp
                     Console.WriteLine($"Line {LastLines[CurrentReadingLine].LineIndex}");
                     foreach (Token token in LastLines[CurrentReadingLine].Tokens)
                     {
-                        Console.WriteLine($"[{token.INDEX}] | {token.TYPE} | {token.Root.LineIndex} | {token.VALUE} | {token.STATIC_VALUE} | {token.LAYER}");
+                        Console.WriteLine($"[{token.INDEX}] | {token.TYPE} | {token.Root.LineIndex} | {token.VALUE} | {token.STATIC_VALUE} | {token.LAYER} | {token.UNION}");
                     }
                     Console.WriteLine($"---------------------------");
                     Console.WriteLine(Environment.NewLine);

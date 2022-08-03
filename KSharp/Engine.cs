@@ -131,8 +131,7 @@ namespace KSharp
                 else if(global.STATIC_VALUE == "VER")
                 {
                     global.VALUE = Program.VERSION;
-                }
-            
+                }           
                 else
                 {
                     Debug.Warning($"At line {global.Root.LineIndex} the global '{global.VALUE}' is not defined");
@@ -153,11 +152,13 @@ namespace KSharp
                 //Debug.Info($"Variable = {variable.VALUE} {variable.STATIC_VALUE}");
                 if (Engine.TryGetVariable(variable.STATIC_VALUE.Replace("$",""), out object _out))
                 {
+            
                     variable.VALUE = _out.ToString();
                 }
                 else
                 {
-                    Debug.Warning($"At line {variable.Root.LineIndex} the variable '{variable.STATIC_VALUE}' is not assinged.");
+                  
+                    Debug.Warning($"At line {variable.Root.LineIndex} the variable '{variable.STATIC_VALUE} | {variable.VALUE}' is not assinged.");
                     variable.TYPE = Token.TOKEN_TYPE.NULL;
                     variable.VALUE = "NULL";
                 }
@@ -285,13 +286,22 @@ namespace KSharp
 
         static bool isBreak = false;
 
-        public static void RunTokens(List<Token> tokens, bool calledInLoop = false)
+        public static void RunTokens(List<Token> tokens, bool calledInLoop = false,bool calledInBlock = false)
         {
             if (tokens.Count != 0)
             {
                 if (tokens[0].VALUE == "echo")
                 {
                     Console.WriteLine(StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END));
+                }
+                else if(tokens[0].VALUE == "INCLUDE")
+                {
+                    Console.WriteLine(StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END, false, 0));
+
+                }
+                else if(tokens[0].VALUE == "echo_a")
+                {
+                    Console.Write(StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END));
                 }
                 else if (tokens[0].VALUE == "push")
                 {
@@ -326,7 +336,7 @@ namespace KSharp
                     {
                         Debug.Error($"time duration not be found at line {tokens[0].Root.LineIndex}");
                     }
-                }
+                }       
                 else if (tokens[0].VALUE == "DEBUG")
                 {
                     if (TryGetTokenAtIndex(tokens, 1, out Token status_token))
@@ -351,7 +361,27 @@ namespace KSharp
                     }
                     else
                     {
-                        Debug.Error($"Debug state could not be found at line {tokens[0].Root.LineIndex}. Use 'ON' or 'OFF");
+                        Debug.Error($"Debug state could not be found at line {tokens[0].Root.LineIndex}. Use 'ON' or 'OFF'");
+                    }
+                }
+                else if(tokens[0].VALUE == "LROM")
+                {
+                    if (TryGetTokenAtIndex(tokens, 1, out Token delay_token))
+                    {
+                        if(int.TryParse(delay_token.VALUE,out int delay))
+                        {
+                            Program.LINE_RUN_DELAY = delay;
+                            Debug.Success($"Run offset set to '{delay_token.VALUE}'");
+                        }
+                        else
+                        {
+                            Debug.Error($"Please give a float value to offset at line {delay_token.Root.LineIndex}. Given value : '{delay_token.VALUE}'");
+                        }
+                        
+                    }
+                    else
+                    {
+                        Debug.Error($"Offset could not be found at line {tokens[0].Root.LineIndex}. Use a number");
                     }
                 }
                 else if (tokens[0].VALUE == "userinput")
@@ -452,11 +482,11 @@ namespace KSharp
                                     Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
                                 }
                             }
-                            else if(EqualityToken.VALUE == ">")
+                            else if(EqualityToken.VALUE == ">>")
                             {
                                 try
                                 {
-                                    if (int.Parse(LeftToken.VALUE) > int.Parse(RightToken.VALUE))
+                                    if (float.Parse(LeftToken.VALUE) > float.Parse(RightToken.VALUE))
                                     {
                                         Debug.Success("TRUE");
 
@@ -470,15 +500,15 @@ namespace KSharp
                                 }
                                 catch
                                 {
-                                    Debug.Error("Can not use that operator in if condition with un-integer values at line " + EqualityToken.Root.LineIndex);
+                                    Debug.Error("Can not use that operator in if condition with un-float values at line " + EqualityToken.Root.LineIndex);
                                 }
 
                             }
-                            else if (EqualityToken.VALUE == "<")
+                            else if (EqualityToken.VALUE == "<<")
                             {
                                 try
                                 {
-                                    if (int.Parse(LeftToken.VALUE) < int.Parse(RightToken.VALUE))
+                                    if (float.Parse(LeftToken.VALUE) < float.Parse(RightToken.VALUE))
                                     {
                                         Debug.Success("TRUE");
 
@@ -492,14 +522,14 @@ namespace KSharp
                                 }
                                 catch
                                 {
-                                    Debug.Error("Can not use that operator in if condition with un-integer values at line " + EqualityToken.Root.LineIndex);
+                                    Debug.Error("Can not use that operator in if condition with un-float values at line " + EqualityToken.Root.LineIndex);
                                 }
                             }
                             else if (EqualityToken.VALUE == ">=")
                             {
                                 try
                                 {
-                                    if (int.Parse(LeftToken.VALUE) >= int.Parse(RightToken.VALUE))
+                                    if (float.Parse(LeftToken.VALUE) >= float.Parse(RightToken.VALUE))
                                     {
                                         Debug.Success("TRUE");
 
@@ -514,14 +544,14 @@ namespace KSharp
                                 catch(Exception ex)
                                 {
                                     Debug.Info(ex.Message);
-                                    Debug.Error("Can not use that operator in if condition with un-integer values at line " + EqualityToken.Root.LineIndex);
+                                    Debug.Error("Can not use that operator in if condition with un-float values at line " + EqualityToken.Root.LineIndex);
                                 }
                             }
                             else if (EqualityToken.VALUE == "<=")
                             {
                                 try
                                 {
-                                    if (int.Parse(LeftToken.VALUE) <= int.Parse(RightToken.VALUE))
+                                    if (float.Parse(LeftToken.VALUE) <= float.Parse(RightToken.VALUE))
                                     {
                                         Debug.Success("TRUE");
 
@@ -535,7 +565,7 @@ namespace KSharp
                                 }
                                 catch
                                 {
-                                    Debug.Error("Can not use that operator in if condition with un-integer values at line " + EqualityToken.Root.LineIndex);
+                                    Debug.Error("Can not use that operator in if condition with un-float values at line " + EqualityToken.Root.LineIndex);
                                 }
                             }
                             else if (EqualityToken.VALUE == "!=")
@@ -619,6 +649,37 @@ namespace KSharp
                         Debug.Error($"Block must have a name to call. At line {tokens[0].Root.LineIndex}");
                     }
                 }
+                else if(tokens[0].VALUE == "out")
+                {
+                    if(!calledInBlock)
+                    {
+                        Debug.Error("'out' command could only from a block called.");
+                    }
+                    Engine.ConvertAllGlobals(tokens);
+                    Engine.ConvertAllVariables(tokens);
+                    Engine.ConvertAllMath(tokens);
+
+                    
+
+                    if (TryGetTokenAtIndex(tokens, 1, out Token name_token))
+                    {
+                        if (Char.IsDigit(name_token.STATIC_VALUE[0]))
+                        {
+                            Debug.Error($"A variable could not start with a digit. At line {tokens[0].Root.LineIndex}");
+                            return;
+                        }
+                        var to_attach_value = StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END);
+
+                        name_token.VALUE = name_token.VALUE.Trim();
+                        AddVariable(name_token.VALUE, to_attach_value);
+                        Debug.Success($"[{name_token.VALUE}] outed as [{to_attach_value}]");
+                    }
+                    else
+                    {
+                        Debug.Error($"Name of the variable could not be found at line {tokens[0].Root.LineIndex}");
+                    }
+
+                }
                 else if(tokens[0].VALUE == "call")
                 {
                     //call x(parameters)
@@ -659,12 +720,20 @@ namespace KSharp
                                 Debug.Error($"All of the parameters must be included for block '{name_token.VALUE}' at line {name_token.Root.LineIndex} {Environment.NewLine} Given parameters : {parameters_string}");
                         }
 
-                        int call_index = Program.CurrentReadingLine;
+                        int call_index = Program.CurrentReadingLine+1;
 
                         for(int i = 0;i < _block.Paramaters.Length;i++)
                         {
                             _block.Paramaters[i] = _block.Paramaters[i].Trim();
+
+                         
+
+                          
                             AddVariable(_block.Paramaters[i], param_list[i]);
+                            
+                            
+                            
+
                         }
 
                         //RUN BLOCK
@@ -674,7 +743,7 @@ namespace KSharp
                             Engine.ConvertAllGlobals(Program.LastLines[Program.CurrentReadingLine].Tokens);
                             Engine.ConvertAllVariables(Program.LastLines[Program.CurrentReadingLine].Tokens);
                             Engine.ConvertAllMath(Program.LastLines[Program.CurrentReadingLine].Tokens);
-                            RunTokens(Program.LastLines[Program.CurrentReadingLine].Tokens);
+                            RunTokens(Program.LastLines[Program.CurrentReadingLine].Tokens,false,true);
 
 
                         }
@@ -683,10 +752,17 @@ namespace KSharp
                         for (int i = 0; i < _block.Paramaters.Length; i++)
                         {
                             _block.Paramaters[i] = _block.Paramaters[i].Trim();
-                            RemoveVariable(_block.Paramaters[i]);
+
+                            if(!_block.Paramaters[i].Contains("&"))
+                            {
+                                RemoveVariable(_block.Paramaters[i]);
+                            }
+                            
+                            
                         }
 
                         //BACK TO CALL LINE
+                        Debug.Success("Called from : " + call_index);
                         Program.CurrentReadingLine = call_index;
                     }
                     else
@@ -694,12 +770,11 @@ namespace KSharp
                         Debug.Error($"Block must have a name to call. At line {tokens[0].Root.LineIndex}");
                     }
                 }
-               
                 else
                 {
                     if (tokens[0].VALUE != "")
                     {
-                        if(tokens[0].TYPE != Token.TOKEN_TYPE.CON_START && tokens[0].TYPE != Token.TOKEN_TYPE.CON_END)
+                        if(tokens[0].TYPE != Token.TOKEN_TYPE.CON_START && tokens[0].TYPE != Token.TOKEN_TYPE.CON_END && tokens[0].TYPE != Token.TOKEN_TYPE.GLOBAL)
                         {
                             Debug.Error($"Unknown Command : '{tokens[0].VALUE}' at line {tokens[0].Root.LineIndex}");
 
@@ -710,14 +785,18 @@ namespace KSharp
                 }
             }
 
-            Thread.Sleep(Program.LINE_RUN_DELAY);
+            if(tokens.Count > 0)
+            {
+                Thread.Sleep(Program.LINE_RUN_DELAY);
 
-   
+            }
+
+
         }
 
         private static List<Line> LinesBetweenType(List<Line> lines, int start_index,Token.TOKEN_TYPE type1, Token.TOKEN_TYPE type2)
         {
-            Line Start = lines.Find(x => x.Tokens.Count > 0 && x.Tokens[0].TYPE == type1 && x.LineIndex >start_index);
+            Line Start = lines.Find(x => x.Tokens.Count > 0 && x.Tokens[0].TYPE == type1 && x.LineIndex > start_index);
             Debug.Success("Start Line : " + Start.LineIndex.ToString());
             Line End = lines.Find(x => x.Tokens.Count > 0 && x.Tokens[0].TYPE == type2 && x.LineIndex > Start.LineIndex && x.Tokens[0].LAYER == Start.Tokens[0].LAYER);
             Debug.Success("End Line : "+End.LineIndex.ToString());
@@ -729,16 +808,84 @@ namespace KSharp
    
         }
 
-        private static string StringGetValueBetweenType(List<Token> tokens,Token.TOKEN_TYPE type1, Token.TOKEN_TYPE type2,bool returnStatics = false)
+        private static string StringGetValueBetweenType(List<Token> tokens,Token.TOKEN_TYPE type1, Token.TOKEN_TYPE type2,bool returnStatics = false,int union = 0)
         {
+            
             string TO_RETURN = "";
 
             try
             {
-                var first = tokens.Find(x => x.TYPE == type1);
-                var last = tokens.FindLast(x => x.TYPE == type2);
 
-                if(first != null && last != null)
+                int k = 0;
+                int lastIndex = 0;
+                Token first = null;
+                while(true)
+                {
+                   
+                    first = tokens.Find(x => x.TYPE == type1 && x.INDEX > lastIndex);
+
+                    if (first == null)
+                    {
+                        if(k == 0)
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            Debug.Error($"Could not find with type {type1} at line {tokens[0].Root.LineIndex}. Union : {union}");
+                        }
+                       
+                        break;
+                    }
+                    if (k >= union)
+                    {
+                        Debug.Success(first.INDEX.ToString());
+                        break;
+                    }
+                    
+                  
+                    lastIndex = first.INDEX;
+
+                    k++;
+
+                }
+
+                k = 0;
+                lastIndex = tokens.Count;
+                Token last = null;
+                while (true)
+                {
+
+
+                    last = tokens.FindLast(x => x.TYPE == type2 && x.INDEX > first.INDEX && x.INDEX < lastIndex);
+                    if (last == null)
+                    {
+                        if(k == 0)
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            Debug.Error($"Could not find with type {type2} at line {tokens[0].Root.LineIndex}. Union : {union}");
+                        }
+                        
+                        break;
+                    }
+                    lastIndex = last.INDEX;
+
+                    if (k >= union)
+                    {
+                        Debug.Success(last.INDEX.ToString());
+                        break;
+                    }
+
+                    k++;
+                }
+
+           
+                
+
+                if (first != null && last != null)
                 {
                     for (int i = first.INDEX + 1; i < last.INDEX; i++)
                     {
@@ -746,7 +893,10 @@ namespace KSharp
                         {
                             if (TO_RETURN == "")
                             {
-                                TO_RETURN = tokens[i].VALUE;
+                            
+                                TO_RETURN = tokens[i].VALUE.Trim();
+                                
+                                
                             }
                             else
                             {
@@ -771,6 +921,7 @@ namespace KSharp
                 }
                 else
                 {
+
                     return null;
                 }
 
@@ -794,14 +945,80 @@ namespace KSharp
 
         }
     
-        private static List<Token> TokensGetBetweenType(List<Token> tokens, Token.TOKEN_TYPE type1, Token.TOKEN_TYPE type2)
+        private static List<Token> TokensGetBetweenType(List<Token> tokens, Token.TOKEN_TYPE type1, Token.TOKEN_TYPE type2,int union = 0)
         {
             List<Token> TO_RETURN = new List<Token>();
 
+            int k = 0;
+            int lastIndex = 0;
+            Token first = null;
+            while (true)
+            {
+
+                first = tokens.Find(x => x.TYPE == type1 && x.INDEX > lastIndex);
+
+                if (first == null)
+                {
+                    if (k == 0)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        Debug.Error($"Could not find with type {type1} at line {tokens[0].Root.LineIndex}. Union : {union}");
+                    }
+
+                    break;
+                }
+                if (k >= union)
+                {
+                    Debug.Success(first.INDEX.ToString());
+                    break;
+                }
+
+
+                lastIndex = first.INDEX;
+
+                k++;
+
+            }
+
+            k = 0;
+            lastIndex = tokens.Count;
+            Token last = null;
+            while (true)
+            {
+
+
+                last = tokens.FindLast(x => x.TYPE == type2 && x.INDEX > first.INDEX && x.INDEX < lastIndex);
+                if (last == null)
+                {
+                    if (k == 0)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        Debug.Error($"Could not find with type {type2} at line {tokens[0].Root.LineIndex}. Union : {union}");
+                    }
+
+                    break;
+                }
+                lastIndex = last.INDEX;
+
+                if (k >= union)
+                {
+                    Debug.Success(last.INDEX.ToString());
+                    break;
+                }
+
+                k++;
+            }
+
+
+
             try
             {
-                var first = tokens.Find(x => x.TYPE == type1);
-                var last = tokens.FindLast(x => x.TYPE == type2);
 
                 if (first != null && last != null)
                 {
