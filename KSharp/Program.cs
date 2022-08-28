@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace KSharp
 {
@@ -16,6 +14,10 @@ namespace KSharp
 
         public static int CurrentReadingLine = 0;
 
+        
+        public static string CODE = "";
+
+
         static void Main(string[] args)
         {
             InitilazeConsole();
@@ -23,7 +25,7 @@ namespace KSharp
             Console.Write(">>> ");
             SCRIPT_PATH = Console.ReadLine();
 
-            if(!File.Exists(SCRIPT_PATH))
+            if (!File.Exists(SCRIPT_PATH))
             {
                 Debug.Error($"{SCRIPT_PATH} doesn't exitsts!");
                 return;
@@ -31,8 +33,10 @@ namespace KSharp
 
             LastLines = Parser.ParseFile(SCRIPT_PATH);
 
+       
 
-            for(CurrentReadingLine = 0; CurrentReadingLine < LastLines.Count; CurrentReadingLine++)
+
+            for (CurrentReadingLine = 0; CurrentReadingLine < LastLines.Count; CurrentReadingLine++)
             {
                 Engine.ConvertAllGlobals(LastLines[CurrentReadingLine].Tokens);
                 Engine.ConvertAllVariables(LastLines[CurrentReadingLine].Tokens);

@@ -14,7 +14,11 @@ namespace KSharp
         {
             
             var list = new List<Line>();
-            string[] lines = File.ReadAllLines(path);
+            string[] lines;
+
+            lines = File.ReadAllLines(path);
+
+
 
             int i = 0;
             int k = 0;
@@ -28,7 +32,6 @@ namespace KSharp
                 List<Token> my_tokens = new List<Token>();
                 foreach(string expression in exp)
                 {
-                    //Debug.Info($"[{expression}]");
                     int LayerIndent = expression.TakeWhile(Char.IsWhiteSpace).Count();
                     var x = expression.Trim();
                     string quote = '"'.ToString();
@@ -56,6 +59,16 @@ namespace KSharp
                         Token token = new Token(k, Token.TOKEN_TYPE.CON_END, x, my_line, LayerIndent, c_union);
                         my_tokens.Add(token);
                     }
+                    else if (x == "[")
+                    {
+                        Token token = new Token(k, Token.TOKEN_TYPE.EDGE_START, x, my_line, LayerIndent, c_union);
+                        my_tokens.Add(token);
+                    }
+                    else if (x == "]")
+                    {
+                        Token token = new Token(k, Token.TOKEN_TYPE.EDGE_END, x, my_line, LayerIndent, c_union);
+                        my_tokens.Add(token);
+                    }
                     else if (x == quote)
                     {
                         Token token = new Token(k, Token.TOKEN_TYPE.QUOTE, x, my_line, c_union);
@@ -69,6 +82,11 @@ namespace KSharp
                     else if (x == "-")
                     {
                         Token token = new Token(k, Token.TOKEN_TYPE.MINUS, x, my_line, c_union);
+                        my_tokens.Add(token);
+                    }
+                    else if(x == "#")
+                    {
+                        Token token = new Token(k, Token.TOKEN_TYPE.COMMENT, x, my_line, c_union);
                         my_tokens.Add(token);
                     }
                     else if (x == "/")
@@ -212,10 +230,11 @@ namespace KSharp
             line = line.Replace(")", " ) ");
             line = line.Replace("(", " ( ");
             line = line.Replace("(", $" ( ");
-
+            line = line.Replace("#", $"# ");
             line = line.Replace("+", " + ");
             line = line.Replace("-", " - ");
             line = line.Replace("*", " * ");
+
             line = line.Replace("/", " / ");
             line = line.Replace("m[", " m[ ");
             line = line.Replace("]m", " ]m ");

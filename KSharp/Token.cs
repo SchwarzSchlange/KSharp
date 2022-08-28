@@ -29,7 +29,11 @@ namespace KSharp
             MATH_END,
             MATH_TO_UPDATE,
             COMMA,
-            CONDITION
+            CONDITION,
+            COMMENT,
+            EDGE_START,
+            EDGE_END
+     
         };
 
         public int INDEX { get; set; }
@@ -39,9 +43,9 @@ namespace KSharp
         public int LAYER { get; set; }
         public int UNION { get; set; }
         public Line Root { get; set; }
-        
+        public bool isVisible { get; set; }
 
-        public Token(int index,TOKEN_TYPE type,string value,Line root,int layer = 0,int union = 0)
+        public Token(int index,TOKEN_TYPE type,string value,Line root,int layer = 0,int union = 0,bool visible = true)
         {
             this.INDEX = index;
             this.TYPE = type;
@@ -50,6 +54,7 @@ namespace KSharp
             STATIC_VALUE = value;
             this.LAYER = layer;
             this.UNION = union;
+            this.isVisible = visible;
         }
   
     }

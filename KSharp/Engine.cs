@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using org.mariuszgromada.math.mxparser;
+
 
 namespace KSharp
 {
@@ -13,6 +15,10 @@ namespace KSharp
         private static Dictionary<string, object> Variables = new Dictionary<string, object>();
 
         private static List<Block> Blocks = new List<Block>();
+        private static List<Karray> Arrays = new List<Karray>();
+        private static List<Window> Windows = new List<Window>();
+
+        private static int TotalAddedLineCount = 0;
 
         public static void AddOverideBlock(string Name,string[] Parameters,List<Line> Lines)
         {
@@ -128,10 +134,75 @@ namespace KSharp
                 {
                     global.VALUE = System.IO.Directory.GetCurrentDirectory();
                 }
+                else if (global.STATIC_VALUE == "DATE")
+                {
+                    global.VALUE = TimeZone.CurrentTimeZone.ToLocalTime(DateTime.Now).ToLongDateString();
+                }
                 else if(global.STATIC_VALUE == "VER")
                 {
                     global.VALUE = Program.VERSION;
                 }           
+                else if(global.STATIC_VALUE == "ARRAY")
+                {
+                    //DebugLogTokens(tokens);
+                    string ArrayText = StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END, false, global.UNION);
+                  
+                    if(ArrayText == null)
+                    {
+                        Debug.Error($"Could not get the array parameter at line {global.Root.LineIndex}");
+                    }
+                    
+                    string[] exploded = ArrayText.Split(',');
+                    exploded[0] = exploded[0].Trim();
+
+                    if(exploded.Length < 2)
+                    {
+                        Debug.Error($"Please give all the array parameters at line {global.Root.LineIndex}");
+                    }
+
+                    Karray thisArray = Arrays.Find(x => x.Name == exploded[0]);
+
+                    if(thisArray == null)
+                    {
+                        Debug.Error($"Could not find the array with name '{exploded[0]}' at line '{global.Root.LineIndex}'");
+                    }
+
+                    //echo($GL_ARRAY(users,0))
+
+                    object FetchedValue = null;
+                    try
+                    {
+                       FetchedValue = thisArray.Content[int.Parse(exploded[1])];
+
+                    }
+                    catch
+                    {
+                        Debug.Error($"Given index ({exploded[1]}) is not avaible to array '{exploded[0]}' at line '{global.Root.LineIndex}'");
+                    }
+
+                    var VisibleTokens = TokensGetBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END, global.UNION);
+
+
+                    var tok = tokens.FindAll(x => x.INDEX > global.INDEX && x.INDEX <= VisibleTokens.Last().INDEX+1);
+
+                    tok.ForEach(x => x.isVisible = false);
+
+               
+                  
+
+                    /*
+                    tokens.RemoveRange(global.INDEX, RemoveTokens.Last().INDEX+1 - global.INDEX+1);
+                    
+                    Token toAdd = new Token(global.INDEX, Token.TOKEN_TYPE.GLOBAL, FetchedValue.ToString(), global.Root, global.LAYER, global.UNION);
+                    toAdd.STATIC_VALUE = global.STATIC_VALUE;
+                    tokens.Insert(global.INDEX,toAdd);
+                                        tokens = NormalizeTokenList(tokens);
+                     */
+
+                    global.VALUE = FetchedValue.ToString();
+
+
+                }
                 else
                 {
                     Debug.Warning($"At line {global.Root.LineIndex} the global '{global.VALUE}' is not defined");
@@ -173,7 +244,7 @@ namespace KSharp
         {
             foreach (Token token in tokens)
             {
-                Console.WriteLine($"[{token.INDEX}] => {token.TYPE} => {token.Root.LineIndex} => {token.VALUE}");
+                Console.WriteLine($"[{token.INDEX}][{token.isVisible}] => {token.TYPE} => {token.Root.LineIndex} => {token.VALUE}[{token.STATIC_VALUE}]");
             }
         }
 
@@ -286,9 +357,10 @@ namespace KSharp
 
         static bool isBreak = false;
 
-        public static void RunTokens(Line RunningLine,List<Token> tokens, bool calledInLoop = false,bool calledInBlock = false)
+        public static void RunTokens(Line RunningLine, List<Token> tokens, bool calledInLoop = false, bool calledInBlock = false)
         {
-            if(RunningLine.isGonnaPassed)
+
+            if (RunningLine.isGonnaPassed)
             {
                 RunningLine.isGonnaPassed = false;
                 Program.CurrentReadingLine++;
@@ -299,31 +371,59 @@ namespace KSharp
             {
                 if (tokens[0].VALUE == "echo")
                 {
-                    Console.WriteLine(StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END));
+                    Console.WriteLine(StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END, false, 0, true));
                 }
-                else if(tokens[0].VALUE == "TITLE")
+                else if (tokens[0].VALUE == "TITLE")
                 {
                     var title = StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END, false, 0);
 
                     Console.Title = title;
 
                 }
-                else if(tokens[0].VALUE == "echo_a")
+                else if (tokens[0].VALUE == "INCLUDE")
                 {
-                    Console.Write(StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END));
+                    var path = StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END, false, 0);
+
+                    if (path == null)
+                    {
+                        Debug.Error("Please give a path at line " + RunningLine.LineIndex);
+                    }
+
+                    if (calledInBlock)
+                    {
+                        Debug.Error("'INCLUDE' could not be called from a block at line : " + RunningLine.LineIndex);
+                    }
+                    else if (calledInLoop)
+                    {
+                        Debug.Error("'INCLUDE' could not be called from a loop at line : " + RunningLine.LineIndex);
+                    }
+
+                    var parsedIncludeLines = Parser.ParseFile(path);
+                    TotalAddedLineCount += parsedIncludeLines.Count;
+
+
+
+                    Program.LastLines.InsertRange(RunningLine.LineIndex, parsedIncludeLines);
+
+                    NormalizeLines(Program.LastLines);
+
+                }
+                else if (tokens[0].VALUE == "echoline")
+                {
+                    Console.Write(StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END, false, 0, true));
                 }
                 else if (tokens[0].VALUE == "push")
                 {
 
                     if (TryGetTokenAtIndex(tokens, 1, out Token name_token))
                     {
-                        if(Char.IsDigit(name_token.VALUE[0]))
+                        if (Char.IsDigit(name_token.VALUE[0]))
                         {
                             Debug.Error($"A variable could not start with a digit. At line {tokens[0].Root.LineIndex}");
                             return;
                         }
                         var to_attach_value = StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END);
-                      
+
                         AddVariable(name_token.VALUE, to_attach_value);
                         Debug.Success($"[{name_token.STATIC_VALUE}] attached as [{to_attach_value}]");
                     }
@@ -332,9 +432,9 @@ namespace KSharp
                         Debug.Error($"Name of the variable could not be found at line {tokens[0].Root.LineIndex}");
                     }
 
-                
+
                 }
-                else if(tokens[0].VALUE == "WAIT")
+                else if (tokens[0].VALUE == "WAIT")
                 {
                     if (TryGetTokenAtIndex(tokens, 1, out Token dur_token))
                     {
@@ -345,7 +445,7 @@ namespace KSharp
                     {
                         Debug.Error($"time duration not be found at line {tokens[0].Root.LineIndex}");
                     }
-                }       
+                }
                 else if (tokens[0].VALUE == "DEBUG")
                 {
                     if (TryGetTokenAtIndex(tokens, 1, out Token status_token))
@@ -354,7 +454,7 @@ namespace KSharp
                         {
                             Debug.IsDebug = true;
                         }
-                        else if(status_token.VALUE == "DEVELOPER_MODE")
+                        else if (status_token.VALUE == "DEVELOPER_MODE")
                         {
                             Debug.IsDeveloperMode = true;
                         }
@@ -373,11 +473,11 @@ namespace KSharp
                         Debug.Error($"Debug state could not be found at line {tokens[0].Root.LineIndex}. Use 'ON' or 'OFF'");
                     }
                 }
-                else if(tokens[0].VALUE == "LROM")
+                else if (tokens[0].VALUE == "LROM")
                 {
                     if (TryGetTokenAtIndex(tokens, 1, out Token delay_token))
                     {
-                        if(int.TryParse(delay_token.VALUE,out int delay))
+                        if (int.TryParse(delay_token.VALUE, out int delay))
                         {
                             Program.LINE_RUN_DELAY = delay;
                             Debug.Success($"Run offset set to '{delay_token.VALUE}'");
@@ -386,7 +486,7 @@ namespace KSharp
                         {
                             Debug.Error($"Please give a float value to offset at line {delay_token.Root.LineIndex}. Given value : '{delay_token.VALUE}'");
                         }
-                        
+
                     }
                     else
                     {
@@ -408,21 +508,21 @@ namespace KSharp
                     }
 
                 }
-                else if(tokens[0].VALUE == "loop")
+                else if (tokens[0].VALUE == "loop")
                 {
-                    
-                    if(int.TryParse(StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END),out int LoopCount))
+
+                    if (int.TryParse(StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END), out int LoopCount))
                     {
                         //Debug.Success("Loop Count = " + LoopCount.ToString());
-                        var runLines = LinesBetweenType(Program.LastLines, tokens[0].Root.LineIndex,Token.TOKEN_TYPE.CON_START, Token.TOKEN_TYPE.CON_END);
+                        var runLines = LinesBetweenType(Program.LastLines, tokens[0].Root.LineIndex, Token.TOKEN_TYPE.CON_START, Token.TOKEN_TYPE.CON_END);
 
-                        
-                        for(int i = 1; i <= LoopCount;i++)
+
+                        for (int i = 1; i <= LoopCount; i++)
                         {
-                            for (Program.CurrentReadingLine = runLines.First().LineIndex-1;Program.CurrentReadingLine < runLines.Last().LineIndex;Program.CurrentReadingLine++)
+                            for (Program.CurrentReadingLine = runLines.First().LineIndex - 1; Program.CurrentReadingLine < runLines.Last().LineIndex; Program.CurrentReadingLine++)
                             {
 
-                                if(isBreak)
+                                if (isBreak)
                                 {
                                     Debug.Info("Breaking the inner loop.");
                                     break;
@@ -430,9 +530,9 @@ namespace KSharp
                                 Engine.ConvertAllGlobals(Program.LastLines[Program.CurrentReadingLine].Tokens);
                                 Engine.ConvertAllVariables(Program.LastLines[Program.CurrentReadingLine].Tokens);
                                 Engine.ConvertAllMath(Program.LastLines[Program.CurrentReadingLine].Tokens);
-                                RunTokens(Program.LastLines[Program.CurrentReadingLine], Program.LastLines[Program.CurrentReadingLine].Tokens,true);
-                     
-                                
+                                RunTokens(Program.LastLines[Program.CurrentReadingLine], Program.LastLines[Program.CurrentReadingLine].Tokens, true);
+
+
                             }
 
                             if (isBreak)
@@ -451,11 +551,11 @@ namespace KSharp
                         return;
                     }
                 }
-                else if(tokens[0].VALUE == "CLEARSC")
+                else if (tokens[0].VALUE == "CLEARSC")
                 {
                     Console.Clear();
                 }
-                else if(tokens[0].VALUE == "if")
+                else if (tokens[0].VALUE == "if")
                 {
                     //if(30 == 30) { }
 
@@ -466,62 +566,62 @@ namespace KSharp
                     var elseLines = LinesBetweenType(Program.LastLines, runLines.Last().LineIndex, Token.TOKEN_TYPE.CON_START, Token.TOKEN_TYPE.CON_END);
 
                     bool isElse = false;
-                    if(elseLines != null)
+                    if (elseLines != null)
                     {
                         isElse = true;
                     }
 
-                
+
 
 
 
                     Token EqualityToken = contidionTokens.Find(x => x.TYPE == Token.TOKEN_TYPE.CONDITION);
 
-                    if(EqualityToken == null)
+                    if (EqualityToken == null)
                     {
                         Debug.Error("Condition could not be found. At line " + contidionTokens[0].Root.LineIndex);
 
                     }
 
-                    if(TryGetTokenAtIndex(tokens,EqualityToken.INDEX-1,out Token LeftToken))
+                    if (TryGetTokenAtIndex(tokens, EqualityToken.INDEX - 1, out Token LeftToken))
                     {
                         if (TryGetTokenAtIndex(tokens, EqualityToken.INDEX + 1, out Token RightToken))
                         {
-                            if(EqualityToken.VALUE == "==")
+                            if (EqualityToken.VALUE == "==")
                             {
                                 //Console.WriteLine($"[{LeftToken.VALUE}] ?= [{RightToken.VALUE}]");
-                                if(LeftToken.VALUE == RightToken.VALUE)
+                                if (LeftToken.VALUE == RightToken.VALUE)
                                 {
                                     Debug.Success("TRUE");
 
 
-                                    if(isElse)
+                                    if (isElse)
                                     {
-                                        foreach(var ElseLine in elseLines)
+                                        foreach (var ElseLine in elseLines)
                                         {
                                             ElseLine.isGonnaPassed = true;
                                         }
                                     }
-                                 
+
 
 
                                 }
                                 else
                                 {
                                     Debug.Info("FALSE");
-                                    if(isElse)
+                                    if (isElse)
                                     {
                                         Program.CurrentReadingLine = elseLines.First().LineIndex - 2;
                                     }
                                     else
                                     {
-                                  
+
                                         Program.CurrentReadingLine = runLines.Last().LineIndex - 1;
                                     }
-                                    
+
                                 }
                             }
-                            else if(EqualityToken.VALUE == ">>")
+                            else if (EqualityToken.VALUE == ">>")
                             {
                                 try
                                 {
@@ -625,7 +725,7 @@ namespace KSharp
                                         }
                                     }
                                 }
-                                catch(Exception ex)
+                                catch (Exception ex)
                                 {
                                     Debug.Info(ex.Message);
                                     Debug.Error("Can not use that operator in if condition with un-float values at line " + EqualityToken.Root.LineIndex);
@@ -717,9 +817,9 @@ namespace KSharp
 
 
                 }
-                else if(tokens[0].VALUE == "BREAK")
+                else if (tokens[0].VALUE == "BREAK")
                 {
-                    if(calledInLoop)
+                    if (calledInLoop)
                     {
                         isBreak = true;
                     }
@@ -728,9 +828,14 @@ namespace KSharp
                         Debug.Warning("Break command could only in loops called.");
                     }
                 }
-                else if(tokens[0].VALUE == "block")
+                else if (tokens[0].VALUE == "EXIT")
                 {
-                    if(calledInLoop)
+                    Environment.Exit(0);
+                }
+                else if (tokens[0].VALUE == "block")
+                {
+
+                    if (calledInLoop)
                     {
                         Debug.Error("You can't add a block in a loop!");
                     }
@@ -747,25 +852,41 @@ namespace KSharp
                         parameters_string = parameters_string.Trim();
                         string[] param_list = parameters_string.Split(',');
 
-                        if(param_list.Length == 0)
+                        if (param_list.Length == 0)
                         {
                             param_list[0] = parameters_string;
                         }
 
-                        Debug.Info("Parameter : " + parameters_string);
+                        Debug.Info($"Parameter : {runLines[0].Priority} " + parameters_string);
 
                         AddOverideBlock(name_token.VALUE, param_list, runLines);
 
-                        Program.CurrentReadingLine = runLines.Last().LineIndex-1;
+                        Program.CurrentReadingLine = runLines.Last().LineIndex - 1 + runLines.Last().Priority;
+
+                        if(name_token.VALUE == "main")
+                        {
+                            //RUN BLOCK
+                            for (Program.CurrentReadingLine = Blocks.Find(x => x.Name == "main").Lines.First().LineIndex - 1; Program.CurrentReadingLine < Blocks.Find(x => x.Name == "main").Lines.Last().LineIndex; Program.CurrentReadingLine++)
+                            {
+
+                                Engine.ConvertAllGlobals(Program.LastLines[Program.CurrentReadingLine].Tokens);
+                                Engine.ConvertAllVariables(Program.LastLines[Program.CurrentReadingLine].Tokens);
+                                Engine.ConvertAllMath(Program.LastLines[Program.CurrentReadingLine].Tokens);
+                                RunTokens(Program.LastLines[Program.CurrentReadingLine], Program.LastLines[Program.CurrentReadingLine].Tokens, false, true);
+
+
+                            }
+                            //END BLOCK
+                        }
                     }
                     else
                     {
                         Debug.Error($"Block must have a name to call. At line {tokens[0].Root.LineIndex}");
                     }
                 }
-                else if(tokens[0].VALUE == "out")
+                else if (tokens[0].VALUE == "out")
                 {
-                    if(!calledInBlock)
+                    if (!calledInBlock)
                     {
                         Debug.Error("'out' command could only from a block called.");
                     }
@@ -773,7 +894,7 @@ namespace KSharp
                     Engine.ConvertAllVariables(tokens);
                     Engine.ConvertAllMath(tokens);
 
-                    
+
 
                     if (TryGetTokenAtIndex(tokens, 1, out Token name_token))
                     {
@@ -794,7 +915,7 @@ namespace KSharp
                     }
 
                 }
-                else if(tokens[0].VALUE == "call")
+                else if (tokens[0].VALUE == "call")
                 {
                     //call x(parameters)
                     if (TryGetTokenAtIndex(tokens, 1, out Token name_token))
@@ -806,14 +927,17 @@ namespace KSharp
 
                         var parameters_string = StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END);
                         parameters_string = parameters_string.Trim();
+                        
                         string[] param_list = parameters_string.Split(',');
 
-                        if(param_list[0] == "")
+                        /*
+                        if (param_list[0] == "")
                         {
                             Debug.Error($"All of the parameters must be included for block '{name_token.VALUE}' at line {name_token.Root.LineIndex} {Environment.NewLine} Given parameters : '{parameters_string}'");
                             param_list = null;
                         }
-                        
+                        */
+
                         Debug.Info("Send Parameter : " + parameters_string);
 
                         if (TryGetBlock(name_token.VALUE, out Block _block))
@@ -826,28 +950,20 @@ namespace KSharp
                         }
 
                         //PARAMETER CHECK
-   
-                        if(_block.Paramaters.Length > 0)
+
+                        if (_block.Paramaters.Length > 0)
                         {
-                            
-                            if(_block.Paramaters.Length != param_list.Length)
+
+                            if (_block.Paramaters.Length != param_list.Length)
                                 Debug.Error($"All of the parameters must be included for block '{name_token.VALUE}' at line {name_token.Root.LineIndex} {Environment.NewLine} Given parameters : {parameters_string}");
                         }
 
-                        int call_index = Program.CurrentReadingLine+1;
+                        int call_index = Program.CurrentReadingLine + 1;
 
-                        for(int i = 0;i < _block.Paramaters.Length;i++)
+                        for (int i = 0; i < _block.Paramaters.Length; i++)
                         {
                             _block.Paramaters[i] = _block.Paramaters[i].Trim();
-
-                         
-
-                          
                             AddVariable(_block.Paramaters[i], param_list[i]);
-                            
-                            
-                            
-
                         }
 
                         //RUN BLOCK
@@ -857,7 +973,7 @@ namespace KSharp
                             Engine.ConvertAllGlobals(Program.LastLines[Program.CurrentReadingLine].Tokens);
                             Engine.ConvertAllVariables(Program.LastLines[Program.CurrentReadingLine].Tokens);
                             Engine.ConvertAllMath(Program.LastLines[Program.CurrentReadingLine].Tokens);
-                            RunTokens(Program.LastLines[Program.CurrentReadingLine], Program.LastLines[Program.CurrentReadingLine].Tokens,false,true);
+                            RunTokens(Program.LastLines[Program.CurrentReadingLine], Program.LastLines[Program.CurrentReadingLine].Tokens, false, true);
 
 
                         }
@@ -867,12 +983,12 @@ namespace KSharp
                         {
                             _block.Paramaters[i] = _block.Paramaters[i].Trim();
 
-                            if(!_block.Paramaters[i].Contains("&"))
+                            if (!_block.Paramaters[i].Contains("&"))
                             {
                                 RemoveVariable(_block.Paramaters[i]);
                             }
-                            
-                            
+
+
                         }
 
                         //BACK TO CALL LINE
@@ -884,26 +1000,224 @@ namespace KSharp
                         Debug.Error($"Block must have a name to call. At line {tokens[0].Root.LineIndex}");
                     }
                 }
+                else if (tokens[0].VALUE == "WINDOW")
+                {
+                    if (TryGetTokenAtIndex(tokens, 1, out Token OperationToken))
+                    {
+                        Console.WriteLine($"[{OperationToken.VALUE}]");
+                        if (OperationToken.VALUE == "CREATE")
+                        {
+
+                            var WindowsParam = StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END);
+                            if (WindowsParam == null)
+                            {
+                                Debug.Error($"Please enter the start parameters at line '{RunningLine.LineIndex}'");
+                            }
+
+                            string[] param = WindowsParam.Split(',');
+
+                            if (param.Length < 4)
+                            {
+                                Debug.Error($"Please include all argument to run form at line {RunningLine.LineIndex}");
+                            }
+
+
+                          
+                            Form.CheckForIllegalCrossThreadCalls = false;
+                            Form newForm = new Form();
+
+                            newForm.Text = param[0];
+                            newForm.Size = new System.Drawing.Size(int.Parse(param[1]), int.Parse(param[2]));
+                            newForm.ShowIcon = false;
+                            newForm.SizeGripStyle = SizeGripStyle.Hide;
+                            newForm.FormBorderStyle = FormBorderStyle.FixedSingle;
+                            
+                            
+
+                            Debug.Success($"'{WindowsParam}' is being shown...");
+                            Windows.Add(new Window(newForm, param[0], int.Parse(param[1]), int.Parse(param[2]), param[3].Trim()));
+                      
+                        }
+                        else if(OperationToken.VALUE == "RENDER")
+                        {
+                            var ACode = StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END);
+
+                            Window SearchedWindow = Windows.Find(x => x.ACCESSNAME == ACode);
+
+                            if (SearchedWindow == null)
+                            {
+                                Debug.Error($"Could not find that window with name '{ACode}' at line {RunningLine.LineIndex}");
+                            }
+
+                            Task.Run(() =>
+                            {
+                                SearchedWindow.CurrentForm.Show();
+                                Application.Run(SearchedWindow.CurrentForm);
+                            });
+                          
+
+                        }
+                        else if (OperationToken.VALUE == "CLOSE")
+                        {
+                            var ACode = StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END);
+
+                            Window SearchedWindow = Windows.Find(x => x.ACCESSNAME == ACode);
+
+                            if (SearchedWindow == null)
+                            {
+                                Debug.Error($"Could not find that window with name '{ACode}' at line {RunningLine.LineIndex}");
+                            }
+
+                            SearchedWindow.CurrentForm.Close();
+                        }
+                        else if (OperationToken.VALUE == "COMPONENT")
+                        {
+                     
+                            if (TryGetTokenAtIndex(tokens, 2, out Token COMPONENTDOTOKEN))
+                            {
+                                if(COMPONENTDOTOKEN.VALUE == "ADD")
+                                {
+                                    var Arguments = StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END);
+
+                                    string[] Parsed = Arguments.Split(',');
+                                    Parsed[0] = Parsed[0].Trim();
+
+                                    int i = 0;
+                                    foreach(var parseValue in Parsed)
+                                    {
+                                        Parsed[i] = parseValue.Trim();
+                                        i++;
+                                    }
+
+                                    if (Parsed.Length < 2)
+                                    {
+                                        Debug.Error($"Please include all argument to run form at line {RunningLine.LineIndex}");
+                                    }
+
+
+                                    Window SearchedWindow = Windows.Find(x => x.ACCESSNAME == Parsed[0]);
+
+                                    if (SearchedWindow == null)
+                                    {
+                                        Debug.Error($"Could not find that window with name '{Parsed[0]}' at line {RunningLine.LineIndex}");
+                                    }
+
+
+                                    if(Parsed[1] == "TEXT")
+                                    {
+                                        Label toAddLabel = new Label();
+                                        toAddLabel.Text = Parsed[2];
+                                        toAddLabel.Dock = DockStyle.Top;
+                                        SearchedWindow.CurrentForm.Controls.Add(toAddLabel);
+                                    }
+                               
+                                 
+                                }
+                                else
+                                {
+                                    Debug.Error($"Unknown operation : '{OperationToken.VALUE}' at line '{RunningLine.LineIndex}'");
+                                }
+
+                            }
+                        }
+                        else
+                        {
+                            Debug.Error($"Unknown operation : '{OperationToken.VALUE}' at line '{RunningLine.LineIndex}'");
+                        }
+
+
+                    }
+                    else
+                    {
+                        Debug.Error($"Operation could not be found at line {RunningLine.LineIndex}");
+                    }
+                }
+                else if (tokens[0].VALUE == "array")
+                {
+                    if (TryGetTokenAtIndex(tokens, 1, out Token OperationToken))
+                    {
+                        if (OperationToken.VALUE == "create")
+                        {
+
+                            var ToName = StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END);
+                            if (ToName == null)
+                            {
+                                Debug.Error($"Please enter the name of the array at line '{RunningLine.LineIndex}'");
+                            }
+
+                            if (Arrays.Find(x => x.Name == ToName) != null)
+                            {
+                                Debug.Error($"There is already a array named '{ToName}' at line '{RunningLine.LineIndex}'");
+                            }
+
+                            Arrays.Add(new Karray(ToName));
+                            Debug.Success($"'{ToName}' has been added!");
+                        }
+                        else if (OperationToken.VALUE == "add")
+                        {
+                            // array add x 
+
+                            if (TryGetTokenAtIndex(tokens, 2, out Token ArrayNameToken))
+                            {
+                                Karray thisArray = Arrays.Find(x => x.Name == ArrayNameToken.VALUE);
+
+                                if (thisArray == null)
+                                {
+                                    Debug.Error($"Given array could not be found at line '{RunningLine.LineIndex}'.Use 'array create({ArrayNameToken.VALUE})'");
+                                }
+
+                                var AddValue = StringGetValueBetweenType(tokens, Token.TOKEN_TYPE.BREC_START, Token.TOKEN_TYPE.BREC_END);
+
+                                if (AddValue == null)
+                                {
+                                    Debug.Error($"Please enter the value to add array at line '{RunningLine.LineIndex}'");
+                                }
+
+                                thisArray.Content.Add(AddValue);
+
+
+
+                            }
+                            else
+                            {
+                                Debug.Error($"Name of the array is missing at line '{RunningLine.LineIndex}'");
+                            }
+
+                        }
+                        else
+                        {
+                            Debug.Error($"Unknown operation : '{OperationToken.VALUE}' at line '{RunningLine.LineIndex}'");
+                        }
+
+
+                    }
+                    else
+                    {
+                        Debug.Error($"Operation could not be found at line {RunningLine.LineIndex}");
+                    }
+                }
                 else
                 {
                     if (tokens[0].VALUE != "")
                     {
-                        if(tokens[0].TYPE != Token.TOKEN_TYPE.CON_START && tokens[0].TYPE != Token.TOKEN_TYPE.CON_END && tokens[0].TYPE != Token.TOKEN_TYPE.GLOBAL && tokens[0].TYPE != Token.TOKEN_TYPE.ELSE)
+                        if (tokens[0].TYPE != Token.TOKEN_TYPE.CON_START && tokens[0].TYPE != Token.TOKEN_TYPE.CON_END && tokens[0].TYPE != Token.TOKEN_TYPE.GLOBAL && tokens[0].TYPE != Token.TOKEN_TYPE.ELSE && tokens[0].TYPE != Token.TOKEN_TYPE.COMMENT)
                         {
                             Debug.Error($"Unknown Command : '{tokens[0].VALUE}' at line {tokens[0].Root.LineIndex}");
 
                         }
 
                     }
-                        
+
                 }
             }
 
-            if(tokens.Count > 0)
+            if (tokens.Count > 0)
             {
                 Thread.Sleep(Program.LINE_RUN_DELAY);
 
             }
+
+
 
 
         }
@@ -929,7 +1243,24 @@ namespace KSharp
    
         }
 
-        private static string StringGetValueBetweenType(List<Token> tokens,Token.TOKEN_TYPE type1, Token.TOKEN_TYPE type2,bool returnStatics = false,int union = 0)
+        public static void NormalizeLines(List<Line> Lines)
+        {
+            int i = 1;
+            foreach(Line line in Lines)
+            {
+                
+                line.LineIndex = i;
+                i++;
+                
+               
+            }
+
+            
+
+        }
+
+
+        private static string StringGetValueBetweenType(List<Token> tokens, Token.TOKEN_TYPE type1, Token.TOKEN_TYPE type2, bool returnStatics = false, int union = 0, bool isEcho = false)
         {
             
             string TO_RETURN = "";
@@ -1010,19 +1341,28 @@ namespace KSharp
                 {
                     for (int i = first.INDEX + 1; i < last.INDEX; i++)
                     {
-                        if(returnStatics == false)
+                        if (!tokens[i].isVisible)
+                        {
+                            if(isEcho)
+                            {
+                                i++;
+                                continue;
+                            }
+                            
+                        }
+                        if (returnStatics == false)
                         {
                             if (TO_RETURN == "")
                             {
-                            
+
                                 TO_RETURN = tokens[i].VALUE.Trim();
-                                
-                                
+
+
                             }
                             else
                             {
                                 TO_RETURN += " " + tokens[i].VALUE;
-                            
+
                             }
                         }
                         else
@@ -1036,6 +1376,8 @@ namespace KSharp
                                 TO_RETURN += " " + tokens[i].STATIC_VALUE;
                             }
                         }
+
+
 
 
                     }
